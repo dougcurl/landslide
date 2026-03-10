@@ -22,8 +22,34 @@ if ($cache_age > CACHE_TTL_SUMMARY) {
     @popen("\"$php_exe\" \"$refresh_script\" > NUL 2>&1", 'r');
 }
 
-// Build a lookup of cached station data (keyed by station_id)
+// Build a lookup of cached station data — prefer summary file, but also
+// read individual station cache files so stations appear as soon as
+// their cache is written (without waiting for the full run to complete).
 $cached = [];
+
+// First load individual station files (always available as they're written)
+foreach (STATIONS as $s) {
+    $sfile = CACHE_DIR . $s['id'] . '.json';
+    if (file_exists($sfile)) {
+        $d = json_decode(file_get_contents($sfile), true);
+        if ($d && !empty($d['station_id'])) {
+            $cached[$d['station_id']] = [
+                'station_id'          => $d['station_id'],
+                'name'                => $d['name'],
+                'lat'                 => $d['lat'],
+                'lng'                 => $d['lng'],
+                'region'              => $d['region'],
+                'location_label'      => $d['location_label'] ?? '',
+                'latest_datetime'     => $d['latest_datetime'],
+                'latest_moisture_avg' => $d['latest_moisture_avg'],
+                'latest_moisture_pct' => $d['latest_moisture_pct'],
+                'latest_sensors'      => $d['latest_sensors'] ?? [],
+            ];
+        }
+    }
+}
+
+// Then overlay summary file if it exists (may be slightly more recent aggregate)
 if (file_exists($summary_path)) {
     $summary = json_decode(file_get_contents($summary_path), true);
     if ($summary && !empty($summary['stations'])) {

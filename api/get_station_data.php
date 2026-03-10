@@ -1,7 +1,7 @@
 <?php
 /**
  * api/get_station_data.php?id=z6-00001
- * Returns full 14-day history for one station.
+ * Returns station metadata, latest sensors, and downsampled 14-day history.
  * Called when a user clicks a map marker to open the detail panel.
  */
 
@@ -34,20 +34,17 @@ if (!$station_cfg) {
 $cache_path = CACHE_DIR . $station_id . '.json';
 $cache_age  = file_exists($cache_path) ? (time() - filemtime($cache_path)) : PHP_INT_MAX;
 
-if ($cache_age > CACHE_TTL_HISTORY) {
-    if (!file_exists($cache_path)) {
-        // No cache at all — synchronous refresh for this one station
-        $php_exe        = PHP_BINARY;
-        $refresh_script = __DIR__ . '/refresh_cache.php';
-        exec("\"$php_exe\" \"$refresh_script\" 2>&1");
-        $cache_age = file_exists($cache_path) ? (time() - filemtime($cache_path)) : PHP_INT_MAX;
-    } else {
-        // Stale cache exists — serve it and trigger background refresh
-        $php_exe        = PHP_BINARY;
-        $refresh_script = __DIR__ . '/refresh_cache.php';
-        $cmd = "\"$php_exe\" \"$refresh_script\" ?station=" . escapeshellarg($station_id) . " > NUL 2>&1";
-        @popen($cmd, 'r');
-    }
+if (!file_exists($cache_path)) {
+    // No cache at all — trigger a single-station synchronous refresh
+    $php_exe        = PHP_BINARY;
+    $refresh_script = __DIR__ . '/refresh_cache.php';
+    exec("\"$php_exe\" \"$refresh_script\" 2>&1");
+    $cache_age = file_exists($cache_path) ? (time() - filemtime($cache_path)) : PHP_INT_MAX;
+} elseif ($cache_age > CACHE_TTL_HISTORY) {
+    // Stale — serve existing cache and trigger background refresh for this station
+    $php_exe        = PHP_BINARY;
+    $refresh_script = __DIR__ . '/refresh_cache.php';
+    @popen("\"$php_exe\" \"$refresh_script\" > NUL 2>&1", 'r');
 }
 
 if (!file_exists($cache_path)) {
@@ -66,5 +63,28 @@ if (!$data) {
     exit;
 }
 
-$data['cache_age_seconds'] = $cache_age;
-echo json_encode($data);
+// ── Downsample history for the panel ─────────────────────────────────────────
+// Full cache has 15-min readings (~1300 rows). Chart only needs ~hourly resolution
+// to show 14-day trends — keep every 4th row (= one per hour).
+// This cuts response size from ~3–5 MB down to ~300–500 KB.
+$full_history = $data['history'] ?? [];
+$sampled = [];
+foreach ($full_history as $i => $row) {
+    if ($i % 4 === 0) $sampled[] = $row;
+}
+
+echo json_encode([
+    'station_id'          => $data['station_id'],
+    'name'                => $data['name'],
+    'lat'                 => $data['lat'],
+    'lng'                 => $data['lng'],
+    'region'              => $data['region'],
+    'location_label'      => $data['location_label'] ?? '',
+    'cached_at'           => $data['cached_at'],
+    'latest_datetime'     => $data['latest_datetime'],
+    'latest_moisture_avg' => $data['latest_moisture_avg'],
+    'latest_moisture_pct' => $data['latest_moisture_pct'],
+    'latest_sensors'      => $data['latest_sensors'] ?? [],
+    'history'             => $sampled,
+    'cache_age_seconds'   => $cache_age,
+], JSON_UNESCAPED_UNICODE);

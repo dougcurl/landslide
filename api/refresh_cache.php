@@ -20,8 +20,25 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/zentra_v5.php';
 
-set_time_limit(600);
-header('Content-Type: application/json');
+// CLI needs unlimited time — 24 stations x 62s = ~25 min minimum
+$is_cli = (php_sapi_name() === 'cli');
+set_time_limit(0);
+ini_set('memory_limit', '256M'); // whitelist filtering keeps per-station usage low
+
+if (!$is_cli) {
+    header('Content-Type: application/json');
+}
+
+// Verbose output — prints timestamped progress to stdout on CLI
+function log_progress(string $msg): void {
+    global $is_cli;
+    $line = '[' . date('H:i:s') . '] ' . $msg . PHP_EOL;
+    if ($is_cli) {
+        echo $line;
+        flush();
+    }
+    error_log(trim($msg));
+}
 
 // ─── Normalize v5 response into cache format ──────────────────────────────────
 //
@@ -53,37 +70,52 @@ function normalize_station_data_v5(array $station, array $raw_response): array {
         $port_cfg_map[(int)$p['port']] = $p;
     }
 
+    // ── Measurement whitelist ─────────────────────────────────────────────────
+    // The TEROS 12 reports many measurements per port (Raw VWC ~25.5, Water Content
+    // ~0.34, Pore Water EC, Bulk EC, Soil Temp etc). We only keep the specific
+    // measurements we need for charts and markers to avoid both wrong values and
+    // excess memory use. Each whitelisted measurement maps to a canonical type.
+    // Key = lowercase measurement name, value = [internal_type, unit]
+    $MEAS_WHITELIST = [
+        'water content'          => ['soil_moisture',    'm³/m³'],
+        'matric potential'       => ['matric_potential', 'kPa'],
+        'soil temperature'       => ['soil_temp',        '°C'],
+        'precipitation'          => ['precipitation',    'mm'],
+        'atmospheric pressure'   => ['atmospheric_pressure', 'kPa'],
+    ];
+
     // ── Group flat values[] by timestamp ─────────────────────────────────────
-    //   timeseries[unix_ts] = [
-    //     'datetime' => '...',
-    //     'sensors'  => [ { port_num, measurement, sensor_name, value, unit, type, label, depth_cm } ]
-    //   ]
-    $timeseries          = [];
-    $latest_by_port_meas = []; // "port_N:measurement" => latest { ts, value, ... }
+    $timeseries        = [];
+    $latest_vwc_by_port = []; // port_num => latest { ts, value } — VWC only, for marker
 
     foreach ($values as $v) {
-        $ts         = (int)($v['timestamp'] ?? 0);
-        $dt         = $v['datetime']    ?? null;
-        $port_num   = (int)($v['port_num']    ?? 0);
-        $meas_name  = $v['measurement'] ?? '';
-        $sensor_name= $v['sensor_name'] ?? '';
-        $raw_value  = $v['value']       ?? null;
-        $error_code = (int)($v['error_code'] ?? 0);
-        $unit       = $v['unit']        ?? '';
+        $ts          = (int)($v['timestamp'] ?? 0);
+        $dt          = $v['datetime']    ?? null;
+        $port_num    = (int)($v['port_num']   ?? 0);
+        $meas_name   = $v['measurement'] ?? '';
+        $sensor_name = $v['sensor_name'] ?? '';
+        $raw_value   = $v['value']       ?? null;
+        $error_code  = (int)($v['error_code'] ?? 0);
+        $unit        = $v['unit']        ?? '';
 
         if (!$ts || !$dt) continue;
-        if ($error_code !== 0 || $raw_value === null) continue; // skip bad readings
+        if ($error_code !== 0 || $raw_value === null) continue;
 
-        // Determine sensor type
+        // Only keep whitelisted measurements
+        $meas_lower = strtolower(trim($meas_name));
+        if (!isset($MEAS_WHITELIST[$meas_lower])) continue;
+
+        [$type, $canonical_unit] = $MEAS_WHITELIST[$meas_lower];
+
         $port_cfg = $port_cfg_map[$port_num] ?? null;
-        $type     = $port_cfg['type']     ?? detect_sensor_type_v5($sensor_name, $meas_name);
         $depth_cm = $port_cfg['depth_cm'] ?? null;
         $label    = $port_cfg['label']    ?? ($depth_cm !== null ? $depth_cm . ' cm' : $sensor_name);
 
-        // Normalize VWC: ensure stored as m³/m³ (0–1 range)
+        // VWC: store as m³/m³ (0–1). Water Content from TEROS 12 is already m³/m³.
+        // Guard against any Raw VWC slipping through (>1.5 = raw count, divide by 100).
         $norm_value = (float)$raw_value;
         if ($type === 'soil_moisture' && $norm_value > 1.5) {
-            $norm_value = $norm_value / 100.0; // was in percent
+            $norm_value = $norm_value / 100.0;
         }
         $norm_value = round($norm_value, 4);
 
@@ -97,44 +129,52 @@ function normalize_station_data_v5(array $station, array $raw_response): array {
             'type'     => $type,
             'depth_cm' => $depth_cm,
             'value'    => $norm_value,
-            'unit'     => $unit ?: get_unit_label_v5($type),
+            'unit'     => $canonical_unit,
             'sensor'   => $sensor_name,
             'meas'     => $meas_name,
         ];
 
-        // Track latest value per port+measurement for map marker / summary
-        $pk = "port_{$port_num}:{$meas_name}";
-        if (!isset($latest_by_port_meas[$pk]) || $ts > $latest_by_port_meas[$pk]['ts']) {
-            $latest_by_port_meas[$pk] = [
-                'ts'       => $ts,
-                'port'     => $port_num,
-                'type'     => $type,
-                'label'    => $label,
-                'depth_cm' => $depth_cm,
-                'value'    => $norm_value,
-                'unit'     => $unit ?: get_unit_label_v5($type),
-                'sensor'   => $sensor_name,
-                'meas'     => $meas_name,
-            ];
+        // Track latest VWC per port for map marker color
+        if ($type === 'soil_moisture') {
+            if (!isset($latest_vwc_by_port[$port_num]) ||
+                $ts > $latest_vwc_by_port[$port_num]['ts']) {
+                $latest_vwc_by_port[$port_num] = [
+                    'ts'       => $ts,
+                    'port'     => $port_num,
+                    'type'     => $type,
+                    'label'    => $label,
+                    'depth_cm' => $depth_cm,
+                    'value'    => $norm_value,
+                    'unit'     => $canonical_unit,
+                    'sensor'   => $sensor_name,
+                    'meas'     => $meas_name,
+                ];
+            }
         }
     }
 
     ksort($timeseries);
     $history = array_values($timeseries);
 
-    // ── Compute average latest soil moisture (for map marker color) ───────────
-    $moisture_vals = [];
-    foreach ($latest_by_port_meas as $pk => $entry) {
-        if ($entry['type'] === 'soil_moisture') {
-            $moisture_vals[] = $entry['value'];
-        }
-    }
-    $moisture_avg = !empty($moisture_vals)
+    // ── Compute average latest VWC across ports (for map marker color) ────────
+    $moisture_vals = array_column($latest_vwc_by_port, 'value');
+    $moisture_avg  = !empty($moisture_vals)
         ? round(array_sum($moisture_vals) / count($moisture_vals), 4)
         : null;
 
-    // Build latest_sensors for summary panel (all types, most recent per port+meas)
-    $latest_sensors = array_values($latest_by_port_meas);
+    // latest_sensors: one entry per port per whitelisted measurement, most recent ts
+    // Build by rescanning history in reverse to find latest per port+type combo
+    $latest_by_key  = [];
+    foreach (array_reverse($history) as $row) {
+        foreach ($row['sensors'] as $s) {
+            $k = $s['port'] . ':' . $s['type'];
+            if (!isset($latest_by_key[$k])) {
+                $latest_by_key[$k] = array_merge($s, ['ts' => 0]);
+            }
+        }
+        if (count($latest_by_key) > 20) break; // got enough
+    }
+    $latest_sensors = array_values($latest_by_key);
     usort($latest_sensors, fn($a, $b) => $a['port'] <=> $b['port']);
 
     $latest_row = !empty($history) ? end($history) : null;
@@ -215,13 +255,16 @@ $results = [];
 $i       = 0;
 $total   = count($stations_to_run);
 
+log_progress("Starting refresh: {$total} stations to process");
+
 foreach ($stations_to_run as $station) {
     $id = $station['id'];
-    error_log("Zentra v5 refresh: [{$i}/{$total}] {$id}");
+    log_progress("[{$i}/{$total}] Fetching {$id} ({$station['name']})...");
 
     $raw = zentra_v5_fetch_data($id);
 
     if (isset($raw['_error'])) {
+        log_progress("[{$i}/{$total}] ERROR {$id}: {$raw['_error']} (HTTP {$raw['_status']})");
         $results[] = [
             'station' => $id,
             'status'  => 'error',
@@ -231,11 +274,14 @@ foreach ($stations_to_run as $station) {
     } else {
         $normalized = normalize_station_data_v5($station, $raw);
         $ok         = write_station_cache($id, $normalized);
+        $moisture   = $normalized['latest_moisture_pct'];
+        $records    = count($normalized['history']);
+        log_progress("[{$i}/{$total}] OK {$id}: {$records} records, moisture=" . ($moisture ?? 'null') . "%");
         $results[]  = [
             'station'         => $id,
             'status'          => $ok ? 'ok' : 'write_error',
-            'records'         => count($normalized['history']),
-            'latest_moisture' => $normalized['latest_moisture_pct'],
+            'records'         => $records,
+            'latest_moisture' => $moisture,
             'name'            => $normalized['name'],
         ];
     }
@@ -245,19 +291,27 @@ foreach ($stations_to_run as $station) {
     // GCRA rate limit: burst=5 free, then 62s between calls
     if ($i < $total) {
         $wait = ($i < 5) ? 1 : 62;
+        log_progress("  Waiting {$wait}s (rate limit)...");
         sleep($wait);
     }
 }
 
 write_summary_cache();
+log_progress("Done. {$i}/{$total} stations processed. Summary cache written.");
 
-$log_line = date('c') . " refresh complete: {$i}/{$total} stations processed\n";
+$log_line = date('c') . " refresh complete: {$i}/{$total} stations processed" . PHP_EOL;
 @file_put_contents(CACHE_DIR . 'refresh.log', $log_line, FILE_APPEND);
 
-echo json_encode([
+$output = json_encode([
     'done'       => true,
     'processed'  => $i,
     'total'      => $total,
     'results'    => $results,
     'ts'         => date('c'),
-], JSON_PRETTY_PRINT);s
+], JSON_PRETTY_PRINT);
+
+if ($is_cli) {
+    echo $output . PHP_EOL;
+} else {
+    echo $output;
+}

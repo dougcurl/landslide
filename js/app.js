@@ -2,27 +2,37 @@
  * KGS Landslide Monitoring Network — app.js
  * ArcGIS JS SDK 4.x  |  Chart.js  |  NOAA NEXRAD radar overlay
  *
- * Chart.js is loaded dynamically via loadChartJS() AFTER ArcGIS require()
- * completes. Loading Chart.js (UMD bundle) in <head> alongside the ArcGIS
- * SDK causes a Dojo AMD "multipleDefine" conflict.
+ * Chart.js loaded dynamically after ArcGIS require() to avoid Dojo AMD conflict.
+ * HTML markers use ArcGIS GraphicsLayer with SVG-based PictureMarkerSymbol so
+ * they render inside the ArcGIS layer stack reliably.
  */
 
-// ── Dynamic Chart.js loader ─────────────────────────────────────────────────
-// Injects Chart.js + date-fns adapter as <script> tags and resolves a Promise
-// once both are loaded. Safe to call multiple times — skips if already loaded.
 function loadChartJS() {
-  if (window.Chart) return Promise.resolve();
+  // Chart.js UMD conflicts with Dojo's AMD loader — it gets intercepted and
+  // window.Chart never gets set. Fix: use a temporary alias trick to shield
+  // the global define from Dojo, then restore it after loading.
+  if (window._chartReady) return Promise.resolve();
+
   return new Promise((resolve, reject) => {
+    // Temporarily disable AMD define so Chart.js registers as a global
+    const savedDefine = window.define;
+    window.define = undefined;
+
     const s1 = document.createElement("script");
     s1.src = "https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js";
     s1.onload = () => {
       const s2 = document.createElement("script");
       s2.src = "https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js";
-      s2.onload = resolve;
-      s2.onerror = reject;
+      s2.onload = () => {
+        // Restore Dojo's define now that both scripts have loaded
+        window.define = savedDefine;
+        window._chartReady = true;
+        setTimeout(resolve, 20);
+      };
+      s2.onerror = () => { window.define = savedDefine; reject(new Error("adapter load failed")); };
       document.head.appendChild(s2);
     };
-    s1.onerror = reject;
+    s1.onerror = () => { window.define = savedDefine; reject(new Error("chart.js load failed")); };
     document.head.appendChild(s1);
   });
 }
@@ -35,11 +45,7 @@ require([
   "esri/layers/GraphicsLayer",
   "esri/widgets/Home",
   "esri/widgets/ScaleBar",
-], function (
-  Map, MapView, WebTileLayer,
-  Graphic, GraphicsLayer,
-  Home, ScaleBar
-) {
+], function (Map, MapView, WebTileLayer, Graphic, GraphicsLayer, Home, ScaleBar) {
 
   // ─── State ───────────────────────────────────────────────────────────────────
   let stationsData    = [];
@@ -47,17 +53,16 @@ require([
   let radarVisible    = false;
   let radarLayer      = null;
   let charts          = {};
-  let markerContainer = null;
 
   // ─── Map Setup ───────────────────────────────────────────────────────────────
-  const map = new Map({ basemap: "topo" });
-
+  const map  = new Map({ basemap: "topo-vector" });
   const view = new MapView({
     container: "map",
-    map: map,
-    center: [-84.27, 37.8],
-    zoom: 7,
-    ui: { components: ["zoom", "compass"] }
+    map,
+    center: [-83.2, 37.4],
+    zoom: 8,
+    ui: { components: ["zoom", "compass"] },
+    popup: { autoOpenEnabled: false }
   });
 
   view.ui.add(new Home({ view }), "top-left");
@@ -70,9 +75,8 @@ require([
   function buildRadarLayer(opacity) {
     return new WebTileLayer({
       urlTemplate: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{level}/{col}/{row}.png",
-      opacity: opacity,
+      opacity,
       id: "radar",
-      title: "NEXRAD Radar",
     });
   }
 
@@ -81,8 +85,7 @@ require([
     this.classList.toggle("active", radarVisible);
     document.getElementById("radar-controls").classList.toggle("visible", radarVisible);
     if (radarVisible) {
-      const opacity = parseFloat(document.getElementById("radar-opacity").value);
-      radarLayer = buildRadarLayer(opacity);
+      radarLayer = buildRadarLayer(parseFloat(document.getElementById("radar-opacity").value));
       map.add(radarLayer, 0);
     } else {
       if (radarLayer) { map.remove(radarLayer); radarLayer = null; }
@@ -104,9 +107,8 @@ require([
 
   // ─── Moisture → Color ────────────────────────────────────────────────────────
   function moistureToColor(val) {
-    if (val === null || val === undefined) return "#4a5a52";
-    const min = 0.05, max = 0.50;
-    const t   = Math.max(0, Math.min(1, (val - min) / (max - min)));
+    if (val === null || val === undefined) return [74, 90, 82];
+    const t = Math.max(0, Math.min(1, (val - 0.05) / 0.45));
     const stops = [
       [0.00, [107, 58,  42]],
       [0.20, [155, 90,  42]],
@@ -120,65 +122,119 @@ require([
       const [t0, c0] = stops[i], [t1, c1] = stops[i + 1];
       if (t >= t0 && t <= t1) {
         const f = (t - t0) / (t1 - t0);
-        return `rgb(${Math.round(c0[0]+f*(c1[0]-c0[0]))},${Math.round(c0[1]+f*(c1[1]-c0[1]))},${Math.round(c0[2]+f*(c1[2]-c0[2]))})`;
+        return [
+          Math.round(c0[0] + f * (c1[0] - c0[0])),
+          Math.round(c0[1] + f * (c1[1] - c0[1])),
+          Math.round(c0[2] + f * (c1[2] - c0[2])),
+        ];
       }
     }
-    return "#5dba7d";
+    return [93, 186, 125];
   }
 
-  // ─── Markers ─────────────────────────────────────────────────────────────────
-  function buildMarkerHTML(station) {
-    const pct   = station.latest_moisture_pct;
-    const color = moistureToColor(station.latest_moisture_avg);
+  function colorToHex([r, g, b]) {
+    return "#" + [r,g,b].map(v => v.toString(16).padStart(2,"0")).join("");
+  }
+
+  // ─── Build SVG marker (used as PictureMarkerSymbol via data URI) ─────────────
+  function buildMarkerSVG(station) {
+    const pct    = station.latest_moisture_pct;
+    const rgb    = moistureToColor(station.latest_moisture_avg);
+    const fill   = colorToHex(rgb);
     const isActive = station.station_id === activeStationId;
-    const inner = pct !== null
-      ? `<span class="pct">${pct}%</span><span class="pct-label">VWC</span>`
-      : `<span class="no-data">N/A</span>`;
-    return `
-      <div class="station-marker-wrapper${isActive ? ' active' : ''}">
-        <div class="station-bubble${isActive ? ' active' : ''}" style="background:${color}">${inner}</div>
-        <div class="station-pin"></div>
-        <div class="station-name-label">${station.name.replace(/^Station \d+ — /, '')}</div>
-      </div>`;
+    const stroke  = isActive ? "#ffffff" : "rgba(0,0,0,0.45)";
+    const strokeW = isActive ? 3 : 1.5;
+    const label   = pct !== null ? `${pct}%` : "N/A";
+    const name    = station.name.replace(/^Station \d+ — /, "");
+
+    // SVG canvas: 120 wide × 104 tall
+    // Bubble r=32 centred at (60, 34), pin below, name pill at bottom
+    const cx = 60, cy = 34, r = 32;
+    const pinY = cy + r; // tip of bubble
+    const pillY = 90;    // vertical centre of name pill
+
+    // Estimate text width for pill sizing (monospace ~7.5px per char at font-size 11)
+    const nameLen  = Math.min(name.length, 20);
+    const pillW    = Math.max(nameLen * 7.2 + 16, 60);
+    const pillX    = 60 - pillW / 2;
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="104" viewBox="0 0 120 104">
+      <defs>
+        <filter id="sh" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="rgba(0,0,0,0.6)"/>
+        </filter>
+        <filter id="lsh" x="-10%" y="-30%" width="120%" height="160%">
+          <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="rgba(0,0,0,0.7)"/>
+        </filter>
+      </defs>
+      <!-- Bubble -->
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" filter="url(#sh)"/>
+      <!-- Pin -->
+      <polygon points="${cx},${pinY + 14} ${cx - 8},${pinY} ${cx + 8},${pinY}"
+               fill="${fill}" stroke="${stroke}" stroke-width="${strokeW - 0.5}"/>
+      <!-- VWC value — large % number fills the bubble -->
+      <text x="${cx}" y="${cy + 8}" text-anchor="middle" font-family="'Courier New',monospace"
+            font-size="22" font-weight="bold" fill="white"
+            paint-order="stroke" stroke="rgba(0,0,0,0.25)" stroke-width="1">${label}</text>
+      <text x="${cx}" y="${cy + 20}" text-anchor="middle" font-family="'Courier New',monospace"
+            font-size="8.5" fill="rgba(255,255,255,0.8)" letter-spacing="1">VWC</text>
+      <!-- Name pill -->
+      <rect x="${pillX}" y="${pillY - 9}" width="${pillW}" height="18" rx="4"
+            fill="rgba(0,0,0,0.72)" filter="url(#lsh)"/>
+      <text x="60" y="${pillY + 4.5}" text-anchor="middle" font-family="Arial,sans-serif"
+            font-size="11" font-weight="600" fill="white" letter-spacing="0.3">${name.substring(0,22)}</text>
+    </svg>`;
   }
 
-  function renderHTMLMarkers(stations) {
-    if (!markerContainer) {
-      markerContainer = document.createElement("div");
-      markerContainer.id = "marker-overlay";
-      markerContainer.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;";
-      document.getElementById("map").appendChild(markerContainer);
-    }
-    markerContainer.innerHTML = "";
+  function svgToDataURI(svg) {
+    return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
+  }
+
+  // ─── Render Markers via GraphicsLayer ────────────────────────────────────────
+  function renderMarkers(stations) {
+    stationLayer.removeAll();
     stations.forEach(station => {
-      const div = document.createElement("div");
-      div.id = `marker-${station.station_id}`;
-      div.style.cssText = "position:absolute;transform:translate(-50%,-100%);pointer-events:all;";
-      div.innerHTML = buildMarkerHTML(station);
-      div.querySelector(".station-marker-wrapper").addEventListener("click", () => openPanel(station.station_id));
-      markerContainer.appendChild(div);
+      const svg = buildMarkerSVG(station);
+      const graphic = new Graphic({
+        geometry: {
+          type: "point",
+          longitude: station.lng,
+          latitude:  station.lat,
+        },
+        symbol: {
+          type: "picture-marker",
+          url:    svgToDataURI(svg),
+          width:  "120px",
+          height: "104px",
+          yoffset: "52px",  // shift up so pin tip sits on coordinate
+        },
+        attributes: { station_id: station.station_id },
+      });
+      stationLayer.add(graphic);
     });
-    positionMarkers();
   }
 
-  function positionMarkers() {
-    if (!markerContainer || !stationsData.length) return;
-    stationsData.forEach(station => {
-      const el = document.getElementById(`marker-${station.station_id}`);
-      if (!el) return;
-      const screenPt = view.toScreen({ type: "point", longitude: station.lng, latitude: station.lat });
-      if (screenPt) {
-        el.style.left = screenPt.x + "px";
-        el.style.top  = screenPt.y + "px";
-        el.style.display = "";
-      } else {
-        el.style.display = "none";
+  // ─── Click handler on the graphics layer ─────────────────────────────────────
+  view.on("click", function (event) {
+    view.hitTest(event).then(function (response) {
+      const hit = response.results.find(r =>
+        r.graphic && r.graphic.layer === stationLayer
+      );
+      if (hit) {
+        openPanel(hit.graphic.attributes.station_id);
       }
     });
-  }
+  });
 
-  view.watch("extent", positionMarkers);
-  view.watch("zoom",   positionMarkers);
+  // Change cursor on hover
+  view.on("pointer-move", function (event) {
+    view.hitTest(event).then(function (response) {
+      const hit = response.results.find(r =>
+        r.graphic && r.graphic.layer === stationLayer
+      );
+      view.container.style.cursor = hit ? "pointer" : "default";
+    });
+  });
 
   // ─── Load Stations ───────────────────────────────────────────────────────────
   function loadStations() {
@@ -186,7 +242,7 @@ require([
       .then(r => r.json())
       .then(data => {
         stationsData = data.stations || [];
-        renderHTMLMarkers(stationsData);
+        renderMarkers(stationsData);
         if (data.cached_at) {
           document.getElementById("last-updated").textContent =
             "Updated " + new Date(data.cached_at).toLocaleTimeString();
@@ -199,34 +255,31 @@ require([
   function openPanel(stationId) {
     activeStationId = stationId;
     document.getElementById("detail-panel").classList.add("open");
-    refreshMarkerActive();
+    // Re-render markers so active one gets white ring
+    renderMarkers(stationsData);
     showPanelLoading();
 
-    // Load Chart.js lazily then fetch station data
     loadChartJS()
-      .then(() => fetch(`api/get_station_data.php?station=${encodeURIComponent(stationId)}`))
-      .then(r => r.json())
+      .then(() => fetch(`api/get_station_data.php?id=${encodeURIComponent(stationId)}`))
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(data => {
         if (data.error) { showPanelError(data.error); return; }
         renderPanelContent(data);
       })
-      .catch(err => showPanelError("Failed to load station data."));
+      .catch(err => {
+        console.error("Panel load error:", err);
+        showPanelError(`Failed to load station data. (${err.message})`);
+      });
   }
 
   function closePanel() {
     activeStationId = null;
     document.getElementById("detail-panel").classList.remove("open");
     destroyCharts();
-    refreshMarkerActive();
-  }
-
-  function refreshMarkerActive() {
-    stationsData.forEach(s => {
-      const el = document.getElementById(`marker-${s.station_id}`);
-      if (!el) return;
-      el.innerHTML = buildMarkerHTML(s);
-      el.querySelector(".station-marker-wrapper").addEventListener("click", () => openPanel(s.station_id));
-    });
+    renderMarkers(stationsData); // re-render to remove active ring
   }
 
   document.getElementById("panel-close").addEventListener("click", closePanel);
@@ -234,8 +287,8 @@ require([
   function showPanelLoading() {
     document.getElementById("panel-header").querySelector(".panel-title").textContent = "Loading…";
     document.getElementById("panel-header").querySelector(".panel-meta").textContent  = "";
-    document.getElementById("panel-body").innerHTML = `
-      <div id="panel-loading"><div class="spinner"></div><p>Fetching station data…</p></div>`;
+    document.getElementById("panel-body").innerHTML =
+      `<div id="panel-loading"><div class="spinner"></div><p>Fetching station data…</p></div>`;
   }
 
   function showPanelError(msg) {
@@ -247,7 +300,7 @@ require([
     destroyCharts();
 
     document.getElementById("panel-header").querySelector(".panel-title").textContent = data.name;
-    const dt = data.latest_datetime ? new Date(data.latest_datetime).toLocaleString() : "No data";
+    const dt = data.latest_datetime ? new Date(data.latest_datetime).toLocaleString() : "No data yet";
     document.getElementById("panel-header").querySelector(".panel-meta").textContent =
       `${data.region}  •  Last reading: ${dt}`;
 
@@ -255,9 +308,12 @@ require([
     const moistures = sensors.filter(s => s.type === "soil_moisture");
     const matrics   = sensors.filter(s => s.type === "matric_potential");
     const temps     = sensors.filter(s => s.type === "soil_temp");
-    const others    = sensors.filter(s => !["soil_moisture","matric_potential","soil_temp"].includes(s.type));
+    const others    = sensors.filter(s => s.type === "precipitation");
 
     let html = `<div class="section-label">Latest Readings</div><div class="latest-grid">`;
+    if (!sensors.length) {
+      html += `<p style="color:var(--muted);font-size:12px;padding:8px 0">No data cached yet — check back after the first refresh cycle.</p>`;
+    }
     moistures.forEach(s => html += sensorCard(s, "sc-moisture"));
     matrics.forEach(s   => html += sensorCard(s, "sc-matric"));
     temps.forEach(s     => html += sensorCard(s, "sc-temp"));
@@ -302,9 +358,11 @@ require([
   }
 
   function typeLabel(t) {
-    return { soil_moisture: "Vol. Water Content", matric_potential: "Matric Potential",
-             soil_temp: "Soil Temperature", precipitation: "Precipitation",
-             atmospheric_pressure: "Atm. Pressure" }[t] || t;
+    return {
+      soil_moisture: "Vol. Water Content", matric_potential: "Matric Potential",
+      soil_temp: "Soil Temperature", precipitation: "Precipitation",
+      atmospheric_pressure: "Atm. Pressure"
+    }[t] || t;
   }
 
   function formatVal(v, type) {
@@ -317,33 +375,30 @@ require([
   const DEPTH_COLORS = ["#5dba7d","#c9a84c","#4a9ebb","#d4793a","#a07dd4"];
 
   function renderChart(canvasId, sensorType, history, yLabel) {
-    const depthSet = new Map();
+    // Use plain object instead of Map for broadest compatibility
+    const depthLabels = {}; // key -> label
     history.forEach(row => {
       (row.sensors || []).forEach(s => {
         if (s.type === sensorType) {
-          const key = `port_${s.port}`;
-          if (!depthSet.has(key)) depthSet.set(key, s.label || `Port ${s.port}`);
+          const key = "port_" + s.port;
+          if (!Object.prototype.hasOwnProperty.call(depthLabels, key)) {
+            depthLabels[key] = s.label || ("Port " + s.port);
+          }
         }
       });
     });
-    if (depthSet.size === 0) return;
+    const depthKeys = Object.keys(depthLabels);
+    if (!depthKeys.length) return;
 
-    const depthKeys = [...depthSet.keys()];
     const datasets  = depthKeys.map((key, i) => ({
-      label:           depthSet.get(key),
+      label:           depthLabels[key],
       data:            [],
       borderColor:     DEPTH_COLORS[i % DEPTH_COLORS.length],
       backgroundColor: DEPTH_COLORS[i % DEPTH_COLORS.length] + "22",
-      borderWidth:     1.5,
-      pointRadius:     0,
-      tension:         0.3,
-      fill:            false,
+      borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false,
     }));
 
-    // Downsample to ~hourly
-    const sampled = history.filter((_, i) => i % 4 === 0);
-
-    sampled.forEach(row => {
+    history.forEach(row => {
       const dt = new Date(row.datetime);
       depthKeys.forEach((key, di) => {
         const portNum = parseInt(key.replace("port_", ""));
@@ -357,8 +412,11 @@ require([
     const ctx = document.getElementById(canvasId)?.getContext("2d");
     if (!ctx) return;
 
-    const yAxisLabel = sensorType === "soil_moisture" ? "VWC (%)" : (yLabel.match(/\(([^)]+)\)/)?.[1] || yLabel);
+    const yAxisLabel = sensorType === "soil_moisture"
+      ? "VWC (%)"
+      : (yLabel.match(/\(([^)]+)\)/)?.[1] || yLabel);
 
+    try {
     charts[canvasId] = new Chart(ctx, {
       type: "line",
       data: { datasets },
@@ -372,11 +430,8 @@ require([
             labels: { color: "#9ab5a3", font: { family: "DM Mono", size: 10 }, boxWidth: 12 }
           },
           tooltip: {
-            backgroundColor: "#151e1a",
-            borderColor: "rgba(120,180,140,0.3)",
-            borderWidth: 1,
-            titleColor: "#e8f0eb",
-            bodyColor: "#9ab5a3",
+            backgroundColor: "#151e1a", borderColor: "rgba(120,180,140,0.3)", borderWidth: 1,
+            titleColor: "#e8f0eb", bodyColor: "#9ab5a3",
             titleFont: { family: "DM Mono", size: 11 },
             bodyFont:  { family: "DM Mono", size: 11 },
           }
@@ -397,6 +452,9 @@ require([
         }
       }
     });
+    } catch(chartErr) {
+      console.error("Chart.js error on", canvasId, chartErr);
+    }
   }
 
   function destroyCharts() {

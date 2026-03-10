@@ -151,8 +151,11 @@ function zentra_v5_get(string $path, array $params = [], int $retry = 0): array 
  *   [ '_error' => string, '_status' => int ]
  */
 function zentra_v5_fetch_data(string $device_id): array {
-    $end_dt   = date('c');
-    $start_dt = date('c', time() - (HISTORY_DAYS * 86400));
+    // Force UTC with explicit +00:00 suffix — v5 requires both datetimes
+    // to use the same timezone format. date('c') on Windows can produce
+    // inconsistent offsets; gmdate gives a clean UTC string.
+    $end_dt   = gmdate('Y-m-d\TH:i:s') . '+00:00';
+    $start_dt = gmdate('Y-m-d\TH:i:s', time() - (HISTORY_DAYS * 86400)) . '+00:00';
 
     $all_values  = [];
     $device_meta = null;
