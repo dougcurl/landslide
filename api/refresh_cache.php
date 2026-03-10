@@ -2,139 +2,119 @@
 /**
  * api/refresh_cache.php
  * ─────────────────────────────────────────────────────────────────────────────
- * Fetches latest data from Zentra Cloud 2.0 API v5 and writes JSON cache files.
+ * Fetches data from Zentra Cloud 2.0 API v5 and writes JSON cache files.
  *
- * Can be called:
- *   - By Windows Task Scheduler every 15 minutes (recommended)
- *   - On-demand by get_station_data.php when cache is stale
- *   - Directly: refresh_cache.php           — refresh ALL stations
- *   - Directly: refresh_cache.php?station=z6-00001 — refresh ONE station
+ * Invocation:
+ *   CLI (Task Scheduler): php refresh_cache.php
+ *   Web — all stations:   refresh_cache.php
+ *   Web — one station:    refresh_cache.php?station=z6-00001
  *
- * v5 Rate limit: GCRA — burst of 5, then 1 req/min steady-state.
- * With 25 stations we exhaust the burst quickly; expect ~25 min for a full
- * sequential refresh. For this reason the Task Scheduler should call this
- * script continuously — it will refresh whichever stations are stale.
+ * v5 endpoint: GET /v5/devices/{device_id}/data
  *
- * Better strategy (implemented here): refresh stations that are MOST STALE
- * first, and stop after processing as many as the burst + steady-state allows
- * within a single scheduler run.
+ * v5 rate limit: GCRA — burst of 5, then 1 req/min.
+ * With 25 stations we exhaust burst on requests 1-5, then each subsequent
+ * station costs ~62s wait. Strategy: sort most-stale stations first so every
+ * 15-min Task Scheduler run makes useful progress.
  */
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/zentra_v5.php';
 
-// Allow long execution — full refresh can take several minutes
-set_time_limit(300);
+set_time_limit(600);
 header('Content-Type: application/json');
 
-// ─── Normalize raw v5 measurement response into our cache format ──────────────
+// ─── Normalize v5 response into cache format ──────────────────────────────────
+//
+// The v5 /data endpoint returns a FLAT array of ValueEntity rows.
+// Each row is one sensor reading at one timestamp:
+//   { port_num, measurement, unit, sensor_name, value, timestamp, datetime, error_code }
+//
+// We group these by timestamp, then build a timeseries usable by Chart.js.
+// We also compute per-port latest values for the map marker.
 
-/**
- * Takes the raw v5 measurements response and the station config,
- * returns a normalized cache object.
- *
- * v5 measurement row (expected structure from api.zentracloud.io Swagger):
- * {
- *   "datetime":  "2025-03-09T14:00:00+00:00",
- *   "timestamp": 1741528800,
- *   "measurements": {
- *     "Port 1": {
- *       "sensor_name":       "TEROS 12",
- *       "measurement_name":  "Water Content",
- *       "value":             0.312,
- *       "unit":              "m³/m³",
- *       "error_flag":        false,
- *       "depth":             100       // depth in mm
- *     },
- *     "Port 2": { ... }
- *   }
- * }
- */
 function normalize_station_data_v5(array $station, array $raw_response): array {
     $device_id   = $station['id'];
     $device_meta = $raw_response['device_meta'] ?? null;
-    $results     = $raw_response['results']     ?? [];
+    $values      = $raw_response['values']      ?? [];
 
-    // Build a port lookup from config: "Port N" => config
-    $port_cfg_map = [];
-    foreach ($station['ports'] as $p) {
-        $port_cfg_map['Port ' . $p['port']] = $p;
+    // ── Parse coordinates from metadata ──────────────────────────────────────
+    $lat = $station['lat'];
+    $lng = $station['lng'];
+    if ($device_meta && isset($device_meta['coordinates'])) {
+        [$api_lat, $api_lng] = parse_coordinates_v5($device_meta['coordinates']);
+        // Only overwrite config coords if they're placeholder zeros
+        if ($lat == 0 && $api_lat !== null) $lat = $api_lat;
+        if ($lng == 0 && $api_lng !== null) $lng = $api_lng;
     }
 
-    // ── Build timeseries ──
-    $timeseries = [];
-    $latest_moisture_by_port = [];  // port_key => ['ts'=>, 'value'=>, 'label'=>, 'depth_cm'=>]
+    // Build a port lookup: port_num => config entry
+    $port_cfg_map = [];
+    foreach ($station['ports'] as $p) {
+        $port_cfg_map[(int)$p['port']] = $p;
+    }
 
-    foreach ($results as $row) {
-        $dt_str = $row['datetime']  ?? null;
-        $ts_unix = isset($row['timestamp']) ? (int)$row['timestamp'] : ($dt_str ? strtotime($dt_str) : null);
+    // ── Group flat values[] by timestamp ─────────────────────────────────────
+    //   timeseries[unix_ts] = [
+    //     'datetime' => '...',
+    //     'sensors'  => [ { port_num, measurement, sensor_name, value, unit, type, label, depth_cm } ]
+    //   ]
+    $timeseries          = [];
+    $latest_by_port_meas = []; // "port_N:measurement" => latest { ts, value, ... }
 
-        if (!$ts_unix || !$dt_str) continue;
+    foreach ($values as $v) {
+        $ts         = (int)($v['timestamp'] ?? 0);
+        $dt         = $v['datetime']    ?? null;
+        $port_num   = (int)($v['port_num']    ?? 0);
+        $meas_name  = $v['measurement'] ?? '';
+        $sensor_name= $v['sensor_name'] ?? '';
+        $raw_value  = $v['value']       ?? null;
+        $error_code = (int)($v['error_code'] ?? 0);
+        $unit       = $v['unit']        ?? '';
 
-        $measurements = $row['measurements'] ?? [];
-        $sensors_out  = [];
+        if (!$ts || !$dt) continue;
+        if ($error_code !== 0 || $raw_value === null) continue; // skip bad readings
 
-        foreach ($measurements as $port_key => $meas) {
-            // port_key is like "Port 1", "Port 2", etc.
-            $port_cfg    = $port_cfg_map[$port_key] ?? null;
-            $sensor_name = $meas['sensor_name']      ?? '';
-            $meas_name   = $meas['measurement_name'] ?? '';
-            $value       = $meas['value']            ?? null;
-            $error_flag  = $meas['error_flag']       ?? false;
-            $depth_mm    = $meas['depth']            ?? null;
+        // Determine sensor type
+        $port_cfg = $port_cfg_map[$port_num] ?? null;
+        $type     = $port_cfg['type']     ?? detect_sensor_type_v5($sensor_name, $meas_name);
+        $depth_cm = $port_cfg['depth_cm'] ?? null;
+        $label    = $port_cfg['label']    ?? ($depth_cm !== null ? $depth_cm . ' cm' : $sensor_name);
 
-            // Skip error readings
-            if ($error_flag || $value === null) continue;
+        // Normalize VWC: ensure stored as m³/m³ (0–1 range)
+        $norm_value = (float)$raw_value;
+        if ($type === 'soil_moisture' && $norm_value > 1.5) {
+            $norm_value = $norm_value / 100.0; // was in percent
+        }
+        $norm_value = round($norm_value, 4);
 
-            // Determine port number from key
-            preg_match('/(\d+)$/', $port_key, $pm);
-            $port_num = isset($pm[1]) ? (int)$pm[1] : 0;
+        // Group by timestamp
+        if (!isset($timeseries[$ts])) {
+            $timeseries[$ts] = ['datetime' => $dt, 'sensors' => []];
+        }
+        $timeseries[$ts]['sensors'][] = [
+            'port'     => $port_num,
+            'label'    => $label,
+            'type'     => $type,
+            'depth_cm' => $depth_cm,
+            'value'    => $norm_value,
+            'unit'     => $unit ?: get_unit_label_v5($type),
+            'sensor'   => $sensor_name,
+            'meas'     => $meas_name,
+        ];
 
-            // Use configured type if available, else auto-detect
-            $type     = $port_cfg['type']     ?? detect_sensor_type_v5($sensor_name, $meas_name);
-            $depth_cm = $port_cfg['depth_cm'] ?? ($depth_mm !== null ? (int)round($depth_mm / 10) : null);
-            $label    = $port_cfg['label']    ?? ($depth_cm !== null ? $depth_cm . ' cm' : $sensor_name);
-            $unit     = $meas['unit']         ?? get_unit_v5($type);
-
-            // Normalize VWC unit: v5 may return % or m³/m³
-            $norm_value = (float)$value;
-            if ($type === 'soil_moisture') {
-                // Ensure stored as m³/m³ (0–1 range)
-                if ($norm_value > 1.5) $norm_value = $norm_value / 100.0;
-                $norm_value = round($norm_value, 4);
-            } else {
-                $norm_value = round($norm_value, 3);
-            }
-
-            $sensors_out[$port_key] = [
+        // Track latest value per port+measurement for map marker / summary
+        $pk = "port_{$port_num}:{$meas_name}";
+        if (!isset($latest_by_port_meas[$pk]) || $ts > $latest_by_port_meas[$pk]['ts']) {
+            $latest_by_port_meas[$pk] = [
+                'ts'       => $ts,
                 'port'     => $port_num,
-                'label'    => $label,
                 'type'     => $type,
+                'label'    => $label,
                 'depth_cm' => $depth_cm,
                 'value'    => $norm_value,
-                'unit'     => $unit,
+                'unit'     => $unit ?: get_unit_label_v5($type),
                 'sensor'   => $sensor_name,
-            ];
-
-            // Track latest soil moisture per port for map marker
-            if ($type === 'soil_moisture') {
-                $pk = 'port_' . $port_num;
-                if (!isset($latest_moisture_by_port[$pk]) ||
-                    $ts_unix > $latest_moisture_by_port[$pk]['ts']) {
-                    $latest_moisture_by_port[$pk] = [
-                        'ts'       => $ts_unix,
-                        'label'    => $label,
-                        'depth_cm' => $depth_cm,
-                        'value'    => $norm_value,
-                    ];
-                }
-            }
-        }
-
-        if (!empty($sensors_out)) {
-            $timeseries[$ts_unix] = [
-                'datetime' => $dt_str,
-                'sensors'  => array_values($sensors_out),
+                'meas'     => $meas_name,
             ];
         }
     }
@@ -142,46 +122,47 @@ function normalize_station_data_v5(array $station, array $raw_response): array {
     ksort($timeseries);
     $history = array_values($timeseries);
 
-    // Average moisture across latest readings from all soil_moisture ports
-    $moisture_avg = null;
-    if (!empty($latest_moisture_by_port)) {
-        $vals = array_column($latest_moisture_by_port, 'value');
-        $moisture_avg = round(array_sum($vals) / count($vals), 4);
+    // ── Compute average latest soil moisture (for map marker color) ───────────
+    $moisture_vals = [];
+    foreach ($latest_by_port_meas as $pk => $entry) {
+        if ($entry['type'] === 'soil_moisture') {
+            $moisture_vals[] = $entry['value'];
+        }
     }
+    $moisture_avg = !empty($moisture_vals)
+        ? round(array_sum($moisture_vals) / count($moisture_vals), 4)
+        : null;
+
+    // Build latest_sensors for summary panel (all types, most recent per port+meas)
+    $latest_sensors = array_values($latest_by_port_meas);
+    usort($latest_sensors, fn($a, $b) => $a['port'] <=> $b['port']);
 
     $latest_row = !empty($history) ? end($history) : null;
 
-    // Also pull lat/lng from device_meta if available (useful if config is placeholder)
-    $lat = $station['lat'];
-    $lng = $station['lng'];
-    if ($device_meta) {
-        if (isset($device_meta['latitude'])  && $station['lat'] == 0) $lat = (float)$device_meta['latitude'];
-        if (isset($device_meta['longitude']) && $station['lng'] == 0) $lng = (float)$device_meta['longitude'];
-    }
-
     return [
         'station_id'          => $device_id,
-        'name'                => $device_meta['name'] ?? $station['name'],
+        'name'                => $device_meta['device_name'] ?? $station['name'],
         'lat'                 => $lat,
         'lng'                 => $lng,
         'region'              => $station['region'],
+        'location_label'      => $device_meta['location']    ?? '',
         'cached_at'           => date('c'),
         'latest_datetime'     => $latest_row ? $latest_row['datetime'] : null,
         'latest_moisture_avg' => $moisture_avg,
         'latest_moisture_pct' => $moisture_avg !== null ? round($moisture_avg * 100, 1) : null,
-        'latest_sensors'      => $latest_row  ? $latest_row['sensors'] : [],
+        'latest_sensors'      => $latest_sensors,
         'port_config'         => $station['ports'],
         'history'             => $history,
     ];
 }
 
-// ─── Write cache files ────────────────────────────────────────────────────────
+// ─── Cache I/O ────────────────────────────────────────────────────────────────
 
 function write_station_cache(string $station_id, array $data): bool {
     if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
     return file_put_contents(
         CACHE_DIR . $station_id . '.json',
-        json_encode($data, JSON_PRETTY_PRINT)
+        json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
     ) !== false;
 }
 
@@ -198,6 +179,7 @@ function write_summary_cache(): bool {
             'lat'                 => $d['lat'],
             'lng'                 => $d['lng'],
             'region'              => $d['region'],
+            'location_label'      => $d['location_label'] ?? '',
             'latest_datetime'     => $d['latest_datetime'],
             'latest_moisture_avg' => $d['latest_moisture_avg'],
             'latest_moisture_pct' => $d['latest_moisture_pct'],
@@ -206,72 +188,76 @@ function write_summary_cache(): bool {
     }
     return file_put_contents(
         CACHE_DIR . 'stations_summary.json',
-        json_encode(['cached_at' => date('c'), 'stations' => $summary], JSON_PRETTY_PRINT)
+        json_encode(
+            ['cached_at' => date('c'), 'stations' => $summary],
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE
+        )
     ) !== false;
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-$target = $_GET['station'] ?? null;
-
-$stations_to_run = $target
+$target            = $_GET['station'] ?? null;
+$stations_to_run   = $target
     ? array_filter(STATIONS, fn($s) => $s['id'] === $target)
     : STATIONS;
 
-// Sort by staleness — refresh most-stale stations first
-// This ensures that if we hit rate limits mid-run, the freshest stations
-// were already handled in the previous run
+// Sort most-stale first so partial runs always make useful progress
 usort($stations_to_run, function($a, $b) {
-    $age_a = PHP_INT_MAX;
-    $age_b = PHP_INT_MAX;
-    $path_a = CACHE_DIR . $a['id'] . '.json';
-    $path_b = CACHE_DIR . $b['id'] . '.json';
-    if (file_exists($path_a)) $age_a = time() - filemtime($path_a);
-    if (file_exists($path_b)) $age_b = time() - filemtime($path_b);
-    return $age_b <=> $age_a; // most stale first
+    $pa = CACHE_DIR . $a['id'] . '.json';
+    $pb = CACHE_DIR . $b['id'] . '.json';
+    $aa = file_exists($pa) ? filemtime($pa) : 0;
+    $ab = file_exists($pb) ? filemtime($pb) : 0;
+    return $aa <=> $ab; // oldest mtime first
 });
 
-$results  = [];
-$i        = 0;
+$results = [];
+$i       = 0;
+$total   = count($stations_to_run);
 
 foreach ($stations_to_run as $station) {
     $id = $station['id'];
-    error_log("Zentra v5: fetching $id");
+    error_log("Zentra v5 refresh: [{$i}/{$total}] {$id}");
 
-    $raw = zentra_v5_fetch_measurements($id);
+    $raw = zentra_v5_fetch_data($id);
 
     if (isset($raw['_error'])) {
-        $results[] = ['station' => $id, 'status' => 'error', 'message' => $raw['_error']];
-        $i++;
-        // Still sleep to respect rate limit even on error
-        if ($i < count($stations_to_run)) sleep(2);
-        continue;
+        $results[] = [
+            'station' => $id,
+            'status'  => 'error',
+            'message' => $raw['_error'],
+            'http'    => $raw['_status'] ?? 0,
+        ];
+    } else {
+        $normalized = normalize_station_data_v5($station, $raw);
+        $ok         = write_station_cache($id, $normalized);
+        $results[]  = [
+            'station'         => $id,
+            'status'          => $ok ? 'ok' : 'write_error',
+            'records'         => count($normalized['history']),
+            'latest_moisture' => $normalized['latest_moisture_pct'],
+            'name'            => $normalized['name'],
+        ];
     }
 
-    $normalized = normalize_station_data_v5($station, $raw);
-    $ok         = write_station_cache($id, $normalized);
-
-    $results[] = [
-        'station'         => $id,
-        'status'          => $ok ? 'ok' : 'write_error',
-        'records'         => count($normalized['history']),
-        'latest_moisture' => $normalized['latest_moisture_pct'],
-    ];
-
     $i++;
-    // v5 GCRA: after the initial burst of 5 is consumed, wait 60s between requests
-    // We use 62s to be safe
-    if ($i < count($stations_to_run)) {
+
+    // GCRA rate limit: burst=5 free, then 62s between calls
+    if ($i < $total) {
         $wait = ($i < 5) ? 1 : 62;
         sleep($wait);
     }
 }
 
-// Rebuild summary from all cached station files
 write_summary_cache();
 
+$log_line = date('c') . " refresh complete: {$i}/{$total} stations processed\n";
+@file_put_contents(CACHE_DIR . 'refresh.log', $log_line, FILE_APPEND);
+
 echo json_encode([
-    'done'    => true,
-    'results' => $results,
-    'ts'      => date('c'),
-]);
+    'done'       => true,
+    'processed'  => $i,
+    'total'      => $total,
+    'results'    => $results,
+    'ts'         => date('c'),
+], JSON_PRETTY_PRINT);s

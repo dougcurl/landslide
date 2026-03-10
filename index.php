@@ -16,9 +16,8 @@ require_once __DIR__ . '/config.php';
   <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/dark/main.css">
   <script src="https://js.arcgis.com/4.29/"></script>
 
-  <!-- Chart.js + date adapter -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <!-- Chart.js is loaded dynamically inside app.js AFTER ArcGIS require()  -->
+  <!-- completes — loading it here conflicts with Dojo's AMD module loader. -->
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
