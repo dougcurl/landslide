@@ -1,6 +1,6 @@
 <?php
 /**
- * KGS Soil Moisture Monitoring Network
+ * KGS Landslide Monitoring Network
  * index.php — Main map interface
  */
 require_once __DIR__ . '/config.php';
@@ -10,13 +10,13 @@ require_once __DIR__ . '/config.php';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><?= htmlspecialchars(SITE_NAME) ?></title>
-  <meta name="description" content="Interactive soil moisture monitoring network map — <?= htmlspecialchars(SITE_ORG) ?>">
+  <meta name="description" content="Interactive landslide soil moisture monitoring network — <?= htmlspecialchars(SITE_ORG) ?>">
 
   <!-- ArcGIS JS SDK 4.x -->
   <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/dark/main.css">
   <script src="https://js.arcgis.com/4.29/"></script>
 
-  <!-- Chart.js + date adapter for time axis -->
+  <!-- Chart.js + date adapter -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
@@ -24,7 +24,6 @@ require_once __DIR__ . '/config.php';
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-  <!-- Our styles -->
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -77,20 +76,13 @@ require_once __DIR__ . '/config.php';
         <div class="panel-meta"></div>
         <button id="panel-close" title="Close">×</button>
       </div>
-      <div id="panel-body">
-        <div id="panel-loading" style="display:none">
-          <div class="spinner"></div>
-          <p>Loading…</p>
-        </div>
-      </div>
+      <div id="panel-body"></div>
     </div>
 
   </div><!-- /map-container -->
 </div><!-- /app -->
 
-<!-- ── JavaScript ──────────────────────────────────────────────────────── -->
 <script>
-  // Pass PHP station config to JS for initial render before API responds
   window.STATION_CONFIG = <?= json_encode(array_map(fn($s) => [
     'station_id' => $s['id'],
     'name'       => $s['name'],
@@ -98,11 +90,6 @@ require_once __DIR__ . '/config.php';
     'lng'        => $s['lng'],
     'region'     => $s['region'],
   ], STATIONS)) ?>;
-</script>
-
-<script>
-  // Configure ArcGIS AMD loader
-  var dojoConfig = { async: true };
 </script>
 
 <script src="js/app.js"></script>

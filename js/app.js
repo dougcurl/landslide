@@ -1,5 +1,5 @@
 /**
- * KGS Soil Moisture Monitoring Network — app.js
+ * KGS Landslide Monitoring Network — app.js
  * ArcGIS JS SDK 4.x  |  Chart.js  |  NOAA NEXRAD radar overlay
  */
 
@@ -28,7 +28,7 @@ require([
 
   // ─── Map Setup ──────────────────────────────────────────────────────────────
   const map = new Map({
-    basemap: "dark-gray-vector"   // ArcGIS dark basemap — clean for data viz
+    basemap: "topo"   // ArcGIS dark basemap — clean for data viz
   });
 
   const view = new MapView({
