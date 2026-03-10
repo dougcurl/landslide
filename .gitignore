@@ -31,3 +31,7 @@ temp/
 .env.local
 .env.*.local
 "@ | Out-File -FilePath .gitignore -Encoding utf8 -NoNewline
+
+#batch file to refresh cache
+@echo off
+.bat

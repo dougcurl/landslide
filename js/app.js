@@ -147,18 +147,31 @@ require([
     const label   = pct !== null ? `${pct}%` : "N/A";
     const name    = station.name.replace(/^Station \d+ — /, "");
 
-    // SVG canvas: 120 wide × 104 tall
-    // Bubble r=32 centred at (60, 34), pin below, name pill at bottom
-    const cx = 60, cy = 34, r = 32;
-    const pinY = cy + r; // tip of bubble
-    const pillY = 90;    // vertical centre of name pill
+    // ── Marker geometry — change ONLY r to resize everything ──────────────
+    const r      = 38;            // bubble radius — the one knob to turn
+    const pad    = 6;             // space above bubble top (for drop shadow)
+    const pinH   = 14;            // pin triangle height below bubble
+    const pillH  = 20;            // name pill height
+    const pillGap = 4;            // gap between pin tip and pill
 
-    // Estimate text width for pill sizing (monospace ~7.5px per char at font-size 11)
-    const nameLen  = Math.min(name.length, 20);
-    const pillW    = Math.max(nameLen * 7.2 + 16, 60);
-    const pillX    = 60 - pillW / 2;
+    // Derived positions — all flow from r
+    const svgW   = (r + pad) * 2;
+    const cx     = svgW / 2;
+    const cy     = r + pad;
+    const pinY   = cy + r;        // bottom of bubble = tip of pin base
+    const pillY  = pinY + pinH + pillGap + pillH / 2;
+    const svgH   = pillY + pillH / 2 + 2;
 
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="104" viewBox="0 0 120 104">
+    // Font scales with bubble
+    const fontSize    = Math.round(r * 0.58);
+    const subFontSize = Math.round(r * 0.22);
+
+    // Pill width scales with name length
+    const nameLen = Math.min(name.length, 22);
+    const pillW   = Math.max(nameLen * 7.2 + 16, 60);
+    const pillX   = cx - pillW / 2;
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">
       <defs>
         <filter id="sh" x="-40%" y="-40%" width="180%" height="180%">
           <feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="rgba(0,0,0,0.6)"/>
@@ -170,18 +183,18 @@ require([
       <!-- Bubble -->
       <circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" filter="url(#sh)"/>
       <!-- Pin -->
-      <polygon points="${cx},${pinY + 14} ${cx - 8},${pinY} ${cx + 8},${pinY}"
+      <polygon points="${cx},${pinY + pinH} ${cx - 8},${pinY} ${cx + 8},${pinY}"
                fill="${fill}" stroke="${stroke}" stroke-width="${strokeW - 0.5}"/>
-      <!-- VWC value — large % number fills the bubble -->
-      <text x="${cx}" y="${cy + 8}" text-anchor="middle" font-family="'Courier New',monospace"
-            font-size="22" font-weight="bold" fill="white"
+      <!-- VWC value -->
+      <text x="${cx}" y="${cy + fontSize * 0.35}" text-anchor="middle" font-family="'Courier New',monospace"
+            font-size="${fontSize}" font-weight="bold" fill="white"
             paint-order="stroke" stroke="rgba(0,0,0,0.25)" stroke-width="1">${label}</text>
-      <text x="${cx}" y="${cy + 20}" text-anchor="middle" font-family="'Courier New',monospace"
-            font-size="8.5" fill="rgba(255,255,255,0.8)" letter-spacing="1">VWC</text>
+      <text x="${cx}" y="${cy + fontSize * 0.72}" text-anchor="middle" font-family="'Courier New',monospace"
+            font-size="${subFontSize}" fill="rgba(255,255,255,0.8)" letter-spacing="1">VWC</text>
       <!-- Name pill -->
-      <rect x="${pillX}" y="${pillY - 9}" width="${pillW}" height="18" rx="4"
+      <rect x="${pillX}" y="${pillY - pillH/2}" width="${pillW}" height="${pillH}" rx="4"
             fill="rgba(0,0,0,0.72)" filter="url(#lsh)"/>
-      <text x="60" y="${pillY + 4.5}" text-anchor="middle" font-family="Arial,sans-serif"
+      <text x="${cx}" y="${pillY + 4}" text-anchor="middle" font-family="Arial,sans-serif"
             font-size="11" font-weight="600" fill="white" letter-spacing="0.3">${name.substring(0,22)}</text>
     </svg>`;
   }
@@ -204,9 +217,11 @@ require([
         symbol: {
           type: "picture-marker",
           url:    svgToDataURI(svg),
-          width:  "120px",
-          height: "104px",
-          yoffset: "52px",  // shift up so pin tip sits on coordinate
+          // Size must match SVG canvas: r=38 → svgW=(38+6)*2=88, svgH≈120
+          // Change these if you change r in buildMarkerSVG
+          width:  "88px",
+          height: "120px",
+          yoffset: "46px",  // = svgH - (pinY + pinH) = distance from bottom to pin tip
         },
         attributes: { station_id: station.station_id },
       });
@@ -427,13 +442,13 @@ require([
         plugins: {
           legend: {
             display: depthKeys.length > 1,
-            labels: { color: "#9ab5a3", font: { family: "DM Mono", size: 10 }, boxWidth: 12 }
+            labels: { color: "#b6d1c2", font: { family: "DM Mono", size: 10 }, boxWidth: 12 }
           },
           tooltip: {
             backgroundColor: "#151e1a", borderColor: "rgba(120,180,140,0.3)", borderWidth: 1,
-            titleColor: "#e8f0eb", bodyColor: "#9ab5a3",
-            titleFont: { family: "DM Mono", size: 11 },
-            bodyFont:  { family: "DM Mono", size: 11 },
+            titleColor: "#e8f0eb", bodyColor: "#b6d1c2",
+            titleFont: { family: "DM Mono", size: 12 },
+            bodyFont:  { family: "DM Mono", size: 12 },
           }
         },
         scales: {
@@ -441,13 +456,13 @@ require([
             type: "time",
             time: { unit: "day", displayFormats: { day: "MMM d" } },
             grid:  { color: "rgba(120,180,140,0.07)" },
-            ticks: { color: "#5a7a65", font: { family: "DM Mono", size: 9 }, maxRotation: 0 }
+            ticks: { color: "#b6d1c2", font: { family: "DM Mono", size: 9 }, maxRotation: 0 }
           },
           y: {
             grid:  { color: "rgba(120,180,140,0.07)" },
-            ticks: { color: "#5a7a65", font: { family: "DM Mono", size: 9 } },
-            title: { display: true, text: yAxisLabel, color: "#5a7a65",
-                     font: { family: "DM Mono", size: 9 } }
+            ticks: { color: "#b6d1c2", font: { family: "DM Mono", size: 9 } },
+            title: { display: true, text: yAxisLabel, color: "#b6d1c2",
+                     font: { family: "DM Mono", size: 11 } }
           }
         }
       }

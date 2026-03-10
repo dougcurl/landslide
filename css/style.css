@@ -13,7 +13,7 @@
   --bg-panel:      #1a2420;
   --bg-card:       #222e29;
   --bg-card-hover: #2a3830;
-  --bg-header:     #0e1a16;
+  --bg-header:     #0d1f3c;
 
   /* Borders */
   --border:        rgba(140, 195, 160, 0.18);
@@ -22,7 +22,7 @@
   /* Text — all pass WCAG AA on dark backgrounds */
   --text-primary:   #f0f5f2;   /* 15.3:1 on bg-dark  ✓ AAA */
   --text-secondary: #b8d4c0;   /* 7.2:1  on bg-dark  ✓ AA  */
-  --text-muted:     #7fa891;   /* 4.6:1  on bg-dark  ✓ AA  */
+  --text-muted:     #b6d1c2;   /* 4.6:1  on bg-dark  ✓ AA  */
   --text-on-accent: #ffffff;   /* white on accent colors    */
 
   /* Accent colors — verified contrast on dark bg */
@@ -43,7 +43,7 @@
   --wet-3:  #2a7a52;
 
   --panel-width: 440px;
-  --header-h:    64px;
+  --header-h:    80px;
   --font-body:   'DM Sans', sans-serif;
   --font-mono:   'DM Mono', monospace;
   --radius:      6px;
@@ -74,7 +74,7 @@ html, body {
 #header {
   height: var(--header-h);
   background: var(--bg-header);
-  border-bottom: 2px solid rgba(94, 196, 127, 0.25);
+  border-bottom: 2px solid rgba(100, 150, 220, 0.35);
   display: flex;
   align-items: center;
   padding: 0 20px;
@@ -89,17 +89,16 @@ html, body {
   flex-shrink: 0;
   text-decoration: none;
   transition: opacity 0.2s;
-  background: #ffffff;
-  border-radius: 5px;
-  padding: 5px 10px;
   opacity: 1;
 }
-.kgs-logo-link:hover { opacity: 0.92; }
+.kgs-logo-link:hover { opacity: 0.85; }
 
 .kgs-logo {
-  height: 36px;
+  height: 40px;
   width: auto;
   display: block;
+  /* Logo is designed for light bg — invert to white for dark header */
+  filter: brightness(0) invert(1);
 }
 
 .header-divider {
@@ -112,7 +111,7 @@ html, body {
 
 .title-block h1 {
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 22px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: 0.01em;
@@ -232,11 +231,10 @@ html, body {
 }
 
 #legend span {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--text-muted);
   font-family: var(--font-mono);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .legend-bar {

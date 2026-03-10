@@ -31,7 +31,7 @@ require_once __DIR__ . '/config.php';
 
   <!-- ── Header ─────────────────────────────────────────────────────────── -->
   <header id="header">
-    <a href="https://kgs.uky.edu" target="_blank" rel="noopener" class="kgs-logo-link" title="Kentucky Geological Survey">
+    <a href="https://kygs.uky.edu/" target="_blank" rel="noopener" class="kgs-logo-link" title="Kentucky Geological Survey">
       <img src="https://kgs.uky.edu/kygeode/img/UK-KGSlogos/KGS-new/kgs-logo-final.png"
            alt="Kentucky Geological Survey" class="kgs-logo">
     </a>
