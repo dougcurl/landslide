@@ -1,0 +1,33 @@
+# Cache directories - anywhere in the project
+**/cache/
+**/*.cache
+cache/
+*.cache
+
+
+# Backup files
+*_backup/
+/backup_*
+**/archive/
+/archive/*
+*.tar.gz
+*.zip
+
+# OS files
+web.config
+config.php
+
+# Logs
+*.log
+error_log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Environment files
+.env
+.env.local
+.env.*.local
+"@ | Out-File -FilePath .gitignore -Encoding utf8 -NoNewline
