@@ -10,8 +10,6 @@ REM  A full run MUST complete before the next one starts to
 REM  avoid two instances competing for the rate limit budget
 REM  (which causes 429 errors and slows everything down).
 REM
-REM  THIS RUNS ON THE KGS MAP SERVER:
-REM  \\kgsgarnet\webshare\kygeode\services\landslide\api\refresh_cache.php
 REM  RECOMMENDED TASK SCHEDULER SETTINGS:
 REM  ─────────────────────────────────────
 REM  1. Open Task Scheduler → Create Task (not Basic Task)
@@ -34,7 +32,7 @@ REM
 REM  ACTIONS tab:
 REM    Action:    Start a program
 REM    Program:   C:\php\php.exe
-REM    Arguments: "\\kgsgarnet\webshare\kygeode\services\landslide\api\refresh_cache.php"
+REM    Arguments: "[PATH TO]\landslide\api\refresh_cache.php"
 REM
 REM  CONDITIONS tab:
 REM    [ ] uncheck "Start only if computer is on AC power" if on a server
@@ -55,8 +53,8 @@ REM  next run starts fresh. Worst-case data age = ~30 minutes.
 REM ============================================================
 
 SET PHP_EXE=C:\php\php.exe
-SET SCRIPT=\\kgsgarnet\webshare\kygeode\services\landslide\api\refresh_cache.php
-SET LOG=\\kgsgarnet\webshare\kygeode\services\landslide\cache\refresh.log
+SET SCRIPT=[PATH TO]\landslide\api\refresh_cache.php
+SET LOG=[PATH TO]\landslide\cache\refresh.log
 
 echo [%DATE% %TIME%] Starting cache refresh >> "%LOG%"
 "%PHP_EXE%" "%SCRIPT%" >> "%LOG%" 2>&1
