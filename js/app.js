@@ -41,11 +41,12 @@ require([
   "esri/Map",
   "esri/views/MapView",
   "esri/layers/WebTileLayer",
+  "esri/layers/MapImageLayer",
   "esri/Graphic",
   "esri/layers/GraphicsLayer",
   "esri/widgets/Home",
   "esri/widgets/ScaleBar",
-], function (Map, MapView, WebTileLayer, Graphic, GraphicsLayer, Home, ScaleBar) {
+], function (Map, MapView, WebTileLayer, MapImageLayer, Graphic, GraphicsLayer, Home, ScaleBar) {
 
   // ─── State ───────────────────────────────────────────────────────────────────
   let stationsData    = [];
@@ -70,6 +71,21 @@ require([
 
   const stationLayer = new GraphicsLayer({ id: "stations" });
   map.add(stationLayer);
+
+  // ─── Landslide Susceptibility Layer ────────────────────────────────────────────
+  const susceptibilityLayer = new MapImageLayer({
+    url: "https://kgs.uky.edu/arcgis/rest/services/Hazards/LandslideSusceptibility/MapServer",
+    opacity: 0.55,
+    visible: false,
+    title: "Landslide Susceptibility"
+  });
+  map.add(susceptibilityLayer, 0); // below station markers, above basemap
+
+  document.getElementById("susceptibility-toggle").addEventListener("click", function () {
+    var isOn = !susceptibilityLayer.visible;
+    susceptibilityLayer.visible = isOn;
+    this.classList.toggle("active", isOn);
+  });
 
   // ─── NEXRAD Radar ────────────────────────────────────────────────────────────
   function buildRadarLayer(opacity) {
@@ -442,13 +458,13 @@ require([
         plugins: {
           legend: {
             display: depthKeys.length > 1,
-            labels: { color: "#b6d1c2", font: { family: "DM Mono", size: 10 }, boxWidth: 12 }
+            labels: { color: "#9ab5a3", font: { family: "DM Mono", size: 10 }, boxWidth: 12 }
           },
           tooltip: {
             backgroundColor: "#151e1a", borderColor: "rgba(120,180,140,0.3)", borderWidth: 1,
-            titleColor: "#e8f0eb", bodyColor: "#b6d1c2",
-            titleFont: { family: "DM Mono", size: 12 },
-            bodyFont:  { family: "DM Mono", size: 12 },
+            titleColor: "#e8f0eb", bodyColor: "#9ab5a3",
+            titleFont: { family: "DM Mono", size: 11 },
+            bodyFont:  { family: "DM Mono", size: 11 },
           }
         },
         scales: {
@@ -456,13 +472,13 @@ require([
             type: "time",
             time: { unit: "day", displayFormats: { day: "MMM d" } },
             grid:  { color: "rgba(120,180,140,0.07)" },
-            ticks: { color: "#b6d1c2", font: { family: "DM Mono", size: 9 }, maxRotation: 0 }
+            ticks: { color: "#5a7a65", font: { family: "DM Mono", size: 9 }, maxRotation: 0 }
           },
           y: {
             grid:  { color: "rgba(120,180,140,0.07)" },
-            ticks: { color: "#b6d1c2", font: { family: "DM Mono", size: 9 } },
-            title: { display: true, text: yAxisLabel, color: "#b6d1c2",
-                     font: { family: "DM Mono", size: 11 } }
+            ticks: { color: "#5a7a65", font: { family: "DM Mono", size: 9 } },
+            title: { display: true, text: yAxisLabel, color: "#5a7a65",
+                     font: { family: "DM Mono", size: 9 } }
           }
         }
       }

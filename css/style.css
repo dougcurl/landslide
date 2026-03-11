@@ -172,6 +172,35 @@ html, body {
   font-family: var(--font-mono);
 }
 
+/* ─── Info Button ────────────────────────────────────────────── */
+.info-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-bright);
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.info-btn svg { width: 16px; height: 16px; }
+
+.info-btn:hover {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: rgba(94, 196, 127, 0.1);
+}
+
+.info-btn:focus-visible {
+  outline: 2px solid var(--accent-green);
+  outline-offset: 2px;
+}
+
 /* ─── Map Container ──────────────────────────────────────────── */
 #map-container {
   flex: 1;

@@ -1,0 +1,284 @@
+/* ============================================================
+   KGS Landslide Monitoring — Splash Modal
+   Matches dashboard dark earthy theme
+   ============================================================ */
+
+/* ─── Overlay ────────────────────────────────────────────────── */
+#splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(8, 14, 11, 0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: splash-fade-in 0.5s ease both;
+}
+
+#splash-overlay.splash-hiding {
+  animation: splash-fade-out 0.4s ease both;
+}
+
+@keyframes splash-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes splash-fade-out { from { opacity: 1; } to { opacity: 0; } }
+
+/* ─── Modal ──────────────────────────────────────────────────── */
+#splash-modal {
+  background: #181f1c;
+  border: 1px solid rgba(140, 195, 160, 0.22);
+  border-radius: 10px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(94,196,127,0.08);
+  max-width: 640px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(140,195,160,0.2) transparent;
+  animation: splash-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.05s;
+}
+
+@keyframes splash-rise {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* ─── Header ─────────────────────────────────────────────────── */
+#splash-header {
+  padding: 32px 36px 24px;
+  border-bottom: 1px solid rgba(140, 195, 160, 0.15);
+  background: linear-gradient(160deg, #0d1f3c 0%, #131c18 60%);
+  border-radius: 10px 10px 0 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* subtle topographic texture lines */
+#splash-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    -35deg,
+    transparent,
+    transparent 28px,
+    rgba(94,196,127,0.035) 28px,
+    rgba(94,196,127,0.035) 29px
+  );
+  pointer-events: none;
+}
+
+.splash-logo-row {
+  margin-bottom: 20px;
+}
+
+.splash-logo {
+  height: 38px;
+  width: auto;
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
+}
+
+.splash-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #5ec47f;
+  margin-bottom: 10px;
+}
+
+#splash-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #f0f5f2;
+  line-height: 1.2;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.splash-subtitle {
+  font-size: 14px;
+  color: #b6d1c2;
+  line-height: 1.55;
+  max-width: 480px;
+  position: relative;
+}
+
+/* ─── Body ───────────────────────────────────────────────────── */
+#splash-body {
+  padding: 24px 36px;
+}
+
+/* ─── Info Cards Grid ────────────────────────────────────────── */
+.splash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.splash-card {
+  background: #1e2b26;
+  border: 1px solid rgba(140, 195, 160, 0.15);
+  border-radius: 7px;
+  padding: 14px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  transition: border-color 0.2s;
+}
+
+.splash-card:hover {
+  border-color: rgba(140, 195, 160, 0.32);
+}
+
+.splash-card-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  color: #5ec47f;
+  margin-top: 1px;
+}
+
+.splash-card-icon svg { width: 100%; height: 100%; }
+
+.splash-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.splash-card-text strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e8f2ec;
+  line-height: 1.3;
+}
+
+.splash-card-text span {
+  font-size: 11.5px;
+  color: #7fa891;
+  line-height: 1.5;
+}
+
+/* ─── How to Read section ────────────────────────────────────── */
+.splash-how {
+  background: #1e2b26;
+  border: 1px solid rgba(140, 195, 160, 0.15);
+  border-radius: 7px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.splash-how-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #7fa891;
+  margin-bottom: 12px;
+}
+
+.splash-swatch-row {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 5px;
+}
+
+.swatch {
+  flex: 1;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.splash-swatch-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  color: #7fa891;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+
+.splash-how p {
+  font-size: 12px;
+  color: #7fa891;
+  line-height: 1.55;
+}
+
+/* ─── Footer note ────────────────────────────────────────────── */
+.splash-footer-note {
+  font-size: 11px;
+  color: #5a7a68;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.splash-footer-note a {
+  color: #7fa891;
+  text-decoration: none;
+}
+
+.splash-footer-note a:hover {
+  color: #5ec47f;
+  text-decoration: underline;
+}
+
+/* ─── Actions ────────────────────────────────────────────────── */
+#splash-actions {
+  padding: 0 36px 28px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+#splash-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  background: #5ec47f;
+  color: #0a1a10;
+  border: none;
+  border-radius: 6px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  letter-spacing: 0.01em;
+}
+
+#splash-close svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s;
+}
+
+#splash-close:hover {
+  background: #6ed48f;
+  transform: translateY(-1px);
+}
+
+#splash-close:hover svg { transform: translateX(3px); }
+
+#splash-close:focus-visible {
+  outline: 2px solid #5ec47f;
+  outline-offset: 3px;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 580px) {
+  #splash-header  { padding: 24px 22px 20px; }
+  #splash-body    { padding: 18px 22px; }
+  #splash-actions { padding: 0 22px 22px; }
+  #splash-title   { font-size: 22px; }
+  .splash-grid    { grid-template-columns: 1fr; }
+  #splash-close   { width: 100%; justify-content: center; }
+}
