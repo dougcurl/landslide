@@ -70,11 +70,45 @@ require_once __DIR__ . '/config.php';
       <div class="spinner"></div>
     </div>
 
+    <!-- Mobile map controls toggle -->
+    <button id="map-controls-toggle" title="Map Controls">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+
     <!-- Radar opacity control -->
-    <div id="radar-controls">
-      <label for="radar-opacity">Radar Opacity</label>
-      <input type="range" id="radar-opacity" min="0.1" max="1" step="0.05" value="0.7">
-    </div>
+  <div id="radar-controls">
+    <label for="radar-opacity">Opacity</label>
+    <input type="range" id="radar-opacity" min="0.1" max="1" step="0.05" value="0.7">
+    <div class="radar-sep"></div>
+    <button id="radar-prev" title="Previous frame">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
+        <polygon points="13,2 3,8 13,14"/>
+      </svg>
+    </button>
+    <button id="radar-play" title="Play/Pause">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
+        <rect x="3" y="2" width="4" height="12"/>
+        <rect x="9" y="2" width="4" height="12"/>
+      </svg>
+    </button>
+    <button id="radar-next" title="Next frame">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
+        <polygon points="3,2 13,8 3,14"/>
+      </svg>
+    </button>
+    <span id="radar-time" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);min-width:70px;text-align:center;"></span>
+    <div class="radar-sep"></div>
+    <label style="font-size:10px;">Speed</label>
+    <select id="radar-speed" style="background:var(--bg-card);border:1px solid var(--border-bright);color:var(--text-secondary);border-radius:3px;font-size:10px;padding:2px 4px;font-family:var(--font-mono);">
+      <option value="800">Slow</option>
+      <option value="500" selected>Normal</option>
+      <option value="250">Fast</option>
+    </select>
+  </div>
 
     <!-- Soil moisture legend -->
     <div id="legend">

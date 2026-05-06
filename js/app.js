@@ -47,8 +47,7 @@ require([
   "esri/layers/GraphicsLayer",
   "esri/widgets/Home",
   "esri/widgets/ScaleBar",
-  "esri/widgets/Expand",  
-], function (Map, MapView, WebTileLayer, MapImageLayer, ImageryLayer, Graphic, GraphicsLayer, Home, ScaleBar, Expand) {
+], function (Map, MapView, WebTileLayer, MapImageLayer, ImageryLayer, Graphic, GraphicsLayer, Home, ScaleBar) {
 
   // ─── State ───────────────────────────────────────────────────────────────────
   let stationsData    = [];
@@ -110,82 +109,103 @@ require([
     }
 
     // Update button states
-    document.querySelectorAll(".basemap-btn").forEach(btn => {
-      btn.classList.toggle("active", btn.dataset.basemap === key);
-    });
-
-    const basemapContent = document.createElement("div");
-    basemapContent.id = "basemap-selector";
-    basemapContent.innerHTML = `
-      <button class="basemap-btn active" data-basemap="topo-vector" title="ESRI Topographic basemap">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
-          <path d="M2 15 L6 8 L10 12 L14 5 L18 15Z" stroke-linejoin="round"/>
-          <path d="M2 15 h16" stroke-linecap="round" opacity="0.5"/>
-        </svg>
-        ESRI Topo
-      </button>
-      <button class="basemap-btn" data-basemap="ky-imagery" title="Kentucky APED 3-inch aerial">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
-          <path d="M10 2 L13 7 L18 8 L14 12 L15 18 L10 15 L5 18 L6 12 L2 8 L7 7 Z" stroke-linejoin="round"/>
-        </svg>
-        KY Aerial (Phase 3)
-      </button>
-      <div class="basemap-divider"></div>
-      <button class="radar-toggle" id="susceptibility-toggle" title="Toggle Landslide Susceptibility Layer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 20 L8 10 L13 15 L17 7 L21 20 Z" stroke-linejoin="round"/>
-          <path d="M3 20 h18" stroke-linecap="round"/>
-        </svg>
-        Landslide Susceptibility
-      </button>
-      <button class="radar-toggle" id="radar-toggle" title="Toggle NEXRAD Weather Radar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2a10 10 0 0 1 10 10"/>
-          <path d="M12 6a6 6 0 0 1 6 6"/>
-          <path d="M12 10a2 2 0 0 1 2 2"/>
-          <line x1="12" y1="12" x2="12" y2="2"/>
-        </svg>
-        Radar
-      </button>
-      <div class="basemap-divider"></div>
-      <button class="basemap-btn" id="autorefresh-toggle" title="Auto-refresh station data every 45 minutes">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M23 4v6h-6"/>
-          <path d="M1 20v-6h6"/>
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
-          <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-        </svg>
-        Auto-refresh
-      </button>
-      <button class="basemap-btn" id="timeslider-toggle" title="View historical soil moisture">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <polyline points="12,6 12,12 9,15"/>
-          <path d="M16.5 4.5 L19 2 M19 2 v4 M19 2 h-4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Soil Moisture Time Slider
-      </button>
-    `;
-
-    // Wire up all button events on the new element
     basemapContent.querySelectorAll(".basemap-btn").forEach(btn => {
       btn.classList.toggle("active", btn.dataset.basemap === key);
     });
-    
-    const basemapExpand = new Expand({
-      view,
-      content: basemapContent,
-      expanded: true,
-      expandIconClass: "esri-icon-layer-list",
-      expandTooltip: "Map Controls",
-      collapseTooltip: "Map Controls",
-    });
 
-    view.ui.add(basemapExpand, "top-center");
   }
 
-  document.querySelectorAll(".basemap-btn").forEach(btn => {
+  // ─── Build basemap widget ─────────────────────────────────────────────────
+  const basemapContent = document.createElement("div");
+  basemapContent.id = "basemap-selector";
+  basemapContent.innerHTML = `
+    <button class="basemap-btn active" data-basemap="topo-vector" title="ESRI Topographic basemap">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M2 15 L6 8 L10 12 L14 5 L18 15Z" stroke-linejoin="round"/>
+        <path d="M2 15 h16" stroke-linecap="round" opacity="0.5"/>
+      </svg>
+      ESRI Topo
+    </button>
+    <button class="basemap-btn" data-basemap="ky-imagery" title="Kentucky APED 3-inch aerial">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M10 2 L13 7 L18 8 L14 12 L15 18 L10 15 L5 18 L6 12 L2 8 L7 7 Z" stroke-linejoin="round"/>
+      </svg>
+      KY Aerial (Phase 3)
+    </button>
+    <div class="basemap-divider"></div>
+    <button class="radar-toggle" id="susceptibility-toggle" title="Toggle Landslide Susceptibility Layer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 20 L8 10 L13 15 L17 7 L21 20 Z" stroke-linejoin="round"/>
+        <path d="M3 20 h18" stroke-linecap="round"/>
+      </svg>
+      Landslide Susceptibility
+    </button>
+    <button class="radar-toggle" id="radar-toggle" title="Toggle NEXRAD Weather Radar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2a10 10 0 0 1 10 10"/>
+        <path d="M12 6a6 6 0 0 1 6 6"/>
+        <path d="M12 10a2 2 0 0 1 2 2"/>
+        <line x1="12" y1="12" x2="12" y2="2"/>
+      </svg>
+      Radar
+    </button>
+    <div class="basemap-divider"></div>
+    <button class="basemap-btn" id="autorefresh-toggle" title="Auto-refresh station data every 45 minutes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 4v6h-6"/>
+        <path d="M1 20v-6h6"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+        <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+      Auto-refresh
+    </button>
+    <button class="basemap-btn" id="timeslider-toggle" title="View historical soil moisture">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12,6 12,12 9,15"/>
+        <path d="M16.5 4.5 L19 2 M19 2 v4 M19 2 h-4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Soil Moisture Time Slider
+    </button>
+  `;
+
+  // Wire all events to basemapContent, not document
+  basemapContent.querySelectorAll(".basemap-btn[data-basemap]").forEach(btn => {
     btn.addEventListener("click", () => switchBasemap(btn.dataset.basemap));
+  });
+
+  basemapContent.querySelector("#susceptibility-toggle").addEventListener("click", function () {
+    const isOn = !susceptibilityLayer.visible;
+    susceptibilityLayer.visible = isOn;
+    this.classList.toggle("active", isOn);
+  });
+
+  basemapContent.querySelector("#radar-toggle").addEventListener("click", function () {
+    radarVisible = !radarVisible;
+    this.classList.toggle("active", radarVisible);
+    document.getElementById("radar-controls").classList.toggle("visible", radarVisible);
+    if (radarVisible) {
+      startRadarAnimation();
+    } else {
+      stopRadarAnimation();
+      const existing = map.findLayerById('radar-anim');
+      if (existing) map.remove(existing);
+    }
+  });
+
+  basemapContent.querySelector("#autorefresh-toggle").addEventListener("click", function () {
+    setAutoRefresh(!this.classList.contains("active"));
+  });
+
+  basemapContent.querySelector("#timeslider-toggle").addEventListener("click", function () {
+    timeSliderActive ? deactivateTimeSlider() : activateTimeSlider();
+  });
+
+  document.getElementById("map-container").appendChild(basemapContent);
+
+  document.getElementById("map-controls-toggle").addEventListener("click", function () {
+    this.classList.toggle("active");
+    basemapContent.classList.toggle("mobile-open");
   });
 
   // ─── Landslide Susceptibility Layer ────────────────────────────────────────────
@@ -197,35 +217,112 @@ require([
   });
   map.add(susceptibilityLayer, 0); // below station markers, above basemap
 
-  document.getElementById("susceptibility-toggle").addEventListener("click", function () {
-    var isOn = !susceptibilityLayer.visible;
-    susceptibilityLayer.visible = isOn;
-    this.classList.toggle("active", isOn);
-  });
+  // ─── NEXRAD Radar Animation ───────────────────────────────────────────────────
+  let radarFrames      = [];
+  let radarFrameIndex  = 0;
+  let radarAnimTimer   = null;
+  let radarSpeed       = 500; // ms per frame
+  const RADAR_FRAMES   = 12;  // 12 x 5min = 60 min history
 
-  // ─── NEXRAD Radar ────────────────────────────────────────────────────────────
-  function buildRadarLayer(opacity) {
-    return new WebTileLayer({
-      urlTemplate: "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{level}/{col}/{row}.png",
-      opacity,
-      id: "radar",
-    });
+  function buildRadarLayer(timestamp, opacity) {
+    const id  = timestamp ? `nexrad-${timestamp}` : 'nexrad-live';
+    const url = timestamp
+      ? `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::USCOMP-N0Q-${timestamp}/{level}/{col}/{row}.png`
+      : `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{level}/{col}/{row}.png`;
+    return new WebTileLayer({ urlTemplate: url, opacity, id });
   }
 
-  document.getElementById("radar-toggle").addEventListener("click", function () {
-    radarVisible = !radarVisible;
-    this.classList.toggle("active", radarVisible);
-    document.getElementById("radar-controls").classList.toggle("visible", radarVisible);
-    if (radarVisible) {
-      radarLayer = buildRadarLayer(parseFloat(document.getElementById("radar-opacity").value));
-      map.add(radarLayer, 0);
-    } else {
-      if (radarLayer) { map.remove(radarLayer); radarLayer = null; }
+  function getRadarTimestamps() {
+    const ms5  = 5 * 60 * 1000;
+    const now  = new Date();
+    // Start 15 minutes ago to ensure tiles exist
+    let t = Math.floor((now.getTime() - 15 * 60 * 1000) / ms5) * ms5;
+    const stamps = [];
+    for (let i = 0; i < RADAR_FRAMES; i++) {
+      const d   = new Date(t - i * ms5);
+      const pad = n => String(n).padStart(2, '0');
+      const stamp = `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}`;
+      stamps.unshift(stamp);
     }
+    return stamps;
+  }
+
+  function startRadarAnimation() {
+    stopRadarAnimation();
+    radarFrames     = getRadarTimestamps();
+    radarFrameIndex = radarFrames.length - 1; // start at most recent
+    showRadarFrame(radarFrameIndex);
+
+    radarAnimTimer = setInterval(() => {
+      radarFrameIndex = (radarFrameIndex + 1) % radarFrames.length;
+      showRadarFrame(radarFrameIndex);
+    }, radarSpeed);
+
+    updateRadarPlayButton(true);
+  }
+
+  function stopRadarAnimation() {
+    if (radarAnimTimer) { clearInterval(radarAnimTimer); radarAnimTimer = null; }
+    updateRadarPlayButton(false);
+  }
+
+  function showRadarFrame(idx) {
+    const opacity = parseFloat(document.getElementById("radar-opacity").value);
+    const stamp   = radarFrames[idx];
+
+    // Remove existing radar layer
+    const existing = map.findLayerById('radar-anim');
+    if (existing) map.remove(existing);
+
+    const layer = buildRadarLayer(stamp, opacity);
+    layer.id    = 'radar-anim';
+    map.add(layer, 0);
+
+    // Update timestamp display
+    const yr  = stamp.substring(0,4);
+    const mo  = stamp.substring(4,6);
+    const dy  = stamp.substring(6,8);
+    const hr  = stamp.substring(8,10);
+    const min = stamp.substring(10,12);
+    const dt  = new Date(Date.UTC(yr, mo-1, dy, hr, min));
+    const el  = document.getElementById("radar-time");
+    if (el) el.textContent = dt.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) + ' UTC';
+  }
+
+  function updateRadarPlayButton(playing) {
+    const btn = document.getElementById("radar-play");
+    if (!btn) return;
+    btn.innerHTML = playing
+      ? `<svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/></svg>`
+      : `<svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><polygon points="3,2 13,8 3,14"/></svg>`;
+  }
+
+  // Update radar opacity while animating
+  document.getElementById("radar-opacity").addEventListener("input", function () {
+    const existing = map.findLayerById('radar-anim');
+    if (existing) existing.opacity = parseFloat(this.value);
+    if (radarLayer) radarLayer.opacity = parseFloat(this.value);
   });
 
-  document.getElementById("radar-opacity").addEventListener("input", function () {
-    if (radarLayer) radarLayer.opacity = parseFloat(this.value);
+  document.getElementById("radar-prev").addEventListener("click", function () {
+    stopRadarAnimation();
+    radarFrameIndex = (radarFrameIndex - 1 + radarFrames.length) % radarFrames.length;
+    showRadarFrame(radarFrameIndex);
+  });
+
+  document.getElementById("radar-next").addEventListener("click", function () {
+    stopRadarAnimation();
+    radarFrameIndex = (radarFrameIndex + 1) % radarFrames.length;
+    showRadarFrame(radarFrameIndex);
+  });
+
+  document.getElementById("radar-speed").addEventListener("change", function () {
+    radarSpeed = parseInt(this.value);
+    if (radarAnimTimer) startRadarAnimation(); // restart with new speed
+  });
+
+  document.getElementById("radar-play").addEventListener("click", function () {
+    radarAnimTimer ? stopRadarAnimation() : startRadarAnimation();
   });
 
   setInterval(() => {
@@ -411,11 +508,7 @@ require([
     }
   }
 
-  document.getElementById("autorefresh-toggle").addEventListener("click", function () {
-    setAutoRefresh(!this.classList.contains("active"));
-  });
-
-// ─── Time Slider ─────────────────────────────────────────────────────────────
+  // ─── Time Slider ─────────────────────────────────────────────────────────────
   function activateTimeSlider() {
     timeSliderActive = true;
     document.getElementById("time-slider-bar").classList.add("visible");
@@ -496,10 +589,6 @@ require([
     }));
     renderMarkers(historicalStations);
   }
-
-  document.getElementById("timeslider-toggle").addEventListener("click", function () {
-    timeSliderActive ? deactivateTimeSlider() : activateTimeSlider();
-  });
 
   document.getElementById("time-slider-input").addEventListener("input", function () {
     renderAtIndex(parseInt(this.value));

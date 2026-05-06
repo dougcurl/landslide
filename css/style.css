@@ -166,6 +166,34 @@ html, body {
 
 .radar-toggle svg { width: 14px; height: 14px; }
 
+/* ─── Radar controls additions ───────────────────────────────── */
+.radar-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border-bright);
+  flex-shrink: 0;
+}
+
+#radar-controls button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-bright);
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+#radar-controls button:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-blue);
+}
+
 #last-updated {
   font-size: 11px;
   color: var(--text-muted);
@@ -256,31 +284,23 @@ html, body {
 }
 
 /* ─── Basemap Selector ───────────────────────────────────────── */
-#basemap-selector {
-  position: absolute;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 2px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-bright);
-  border-radius: var(--radius);
-  padding: 3px;
-  box-shadow: var(--shadow);
-  max-width: 450px;
-}
-
- #basemap-selector {
-   position: static;     /* override the absolute positioning */
-   transform: none;
-   top: auto;
-   left: auto;
-   max-width: 320px;
- }
+  #basemap-selector {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius);
+    padding: 3px;
+    box-shadow: var(--shadow);
+    max-width: 450px;
+  }
 
 .basemap-divider {
   width: 100%;
@@ -328,15 +348,6 @@ html, body {
   outline-offset: 2px;
 }
 
-@media (max-width: 640px) {
-  #basemap-selector {
-    top: auto;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  .basemap-btn span { display: none; }
-}
 
 /* ─── Map Toolbar (left-side floating) ───────────────────────── */
 #map-toolbar {
@@ -407,6 +418,57 @@ html, body {
     left: 10px;
   }
   .map-tool-btn { width: 52px; padding: 8px 6px; }
+}
+
+
+/* ─── Mobile map controls toggle ────────────────────────────── */
+#map-controls-toggle {
+  display: none; /* hidden on desktop */
+}
+
+@media (max-width: 640px) {
+  #map-controls-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 130px;   /* clears zoom + compass + home widgets */
+    left: 10px;
+    transform: none;   /* remove the centering transform */
+    z-index: 51;
+    width: 36px;
+    height: 36px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    color: var(--text-secondary);
+  }
+
+  #map-controls-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  #map-controls-toggle.active {
+    color: var(--accent-green);
+    border-color: var(--accent-green);
+    background: rgba(94,196,127,0.08);
+  }
+
+  /* Hide selector by default on mobile, show when open class added */
+  #basemap-selector {
+    display: none;
+    top: 130px;
+    left: 10px;
+    transform: none;
+    max-width: calc(100vw - 20px);
+  }
+
+  #basemap-selector.mobile-open {
+    display: flex;
+  }
 }
 
 /* ─── Legend ─────────────────────────────────────────────────── */
