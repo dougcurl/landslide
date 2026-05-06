@@ -27,7 +27,16 @@ require_once __DIR__ . '/config.php';
   <link rel="stylesheet" href="css/splash.css">
 </head>
 <body>
+    <!-- GA4 updated Jan 3, 2023 - Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GHBYG6LVJQ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
 
+      gtag('config', 'G-GHBYG6LVJQ');
+      gtag('config', 'UA-3514165-12');
+    </script>
 <div id="app">
 
   <!-- ── Header ─────────────────────────────────────────────────────────── -->
@@ -40,6 +49,7 @@ require_once __DIR__ . '/config.php';
     <div class="title-block">
       <h1><?= htmlspecialchars(SITE_NAME) ?></h1>
       <p><?= htmlspecialchars(SITE_ORG) ?> &nbsp;·&nbsp; <?= count(STATIONS) ?> Monitoring Stations</p>
+      <p>Provisional data updated approximately every 45 minutes via Zentra Cloud 2.0 API</p>
     </div>
     <div class="header-right">
       <button class="radar-toggle" id="susceptibility-toggle" title="Toggle Landslide Susceptibility Layer">
@@ -47,7 +57,7 @@ require_once __DIR__ . '/config.php';
           <path d="M3 20 L8 10 L13 15 L17 7 L21 20 Z" stroke-linejoin="round"/>
           <path d="M3 20 h18" stroke-linecap="round"/>
         </svg>
-        Susceptibility
+        Landslide Susceptibility
       </button>
       <button class="radar-toggle" id="radar-toggle" title="Toggle NEXRAD Weather Radar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -84,7 +94,70 @@ require_once __DIR__ . '/config.php';
       <span>Dry</span>
       <div class="legend-bar"></div>
       <span>Wet</span>
-      <span style="margin-left:8px;font-size:9px;opacity:.5">(m³/m³ VWC)</span>
+      <span style="margin-left:8px;font-size:10px;">(m³/m³ VWC)</span>
+    </div>
+
+    <!-- Basemap selector -->
+    <div id="basemap-selector">
+      <button class="basemap-btn active" data-basemap="topo-vector" title="ESRI Topographic basemap">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M2 15 L6 8 L10 12 L14 5 L18 15Z" stroke-linejoin="round"/>
+          <path d="M2 15 h16" stroke-linecap="round" opacity="0.5"/>
+        </svg>
+        ESRI Topo
+      </button>
+      <!-- extra button - may add something here later, but for now just duplicates the imagery layer toggle
+      <button class="basemap-btn" data-basemap="imagery" title="ESRI satellite imagery">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+          <rect x="2" y="2" width="16" height="16" rx="2"/>
+          <circle cx="10" cy="10" r="3"/>
+          <path d="M10 2 v3 M10 15 v3 M2 10 h3 M15 10 h3" stroke-linecap="round"/>
+        </svg>
+        Imagery
+      </button>
+-     -->
+      <button class="basemap-btn" data-basemap="ky-imagery" title="Kentucky APED 3-inch aerial">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M10 2 L13 7 L18 8 L14 12 L15 18 L10 15 L5 18 L6 12 L2 8 L7 7 Z" stroke-linejoin="round"/>
+        </svg>
+        KY Aerial (Phase 3)
+      </button>
+
+      <!-- map behavior buttons -->
+      <div class="basemap-divider"></div>
+        <button class="basemap-btn" id="autorefresh-toggle" title="Auto-refresh station data every 5 minutes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 4v6h-6"/>
+            <path d="M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+            <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+          Auto-refresh
+        </button>
+        <button class="basemap-btn" id="timeslider-toggle" title="View historical soil moisture">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12,6 12,12 9,15"/>
+            <path d="M16.5 4.5 L19 2 M19 2 v4 M19 2 h-4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Soil Moisture Time Slider
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Time slider -->
+    <div id="time-slider-bar">
+      <span class="ts-label">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13">
+          <circle cx="8" cy="8" r="6"/>
+          <polyline points="8,4 8,8 6,10"/>
+        </svg>
+        14-Day History (Soil Moisture Only)
+      </span>
+      <input type="range" id="time-slider-input" min="0" max="100" value="100" aria-label="time slider">
+      <span id="time-slider-status">Loading…</span>
+      <span class="ts-live">◀ drag left to go back in time</span>
     </div>
 
     <!-- ── Station Detail Panel ──────────────────────────────────────── -->
@@ -147,8 +220,10 @@ require_once __DIR__ . '/config.php';
              alt="Kentucky Geological Survey" class="splash-logo">
       </div>
       <div class="splash-tag">Real-Time Monitoring Network</div>
-      <h1 id="splash-title">Kentucky Landslide<br>Monitoring Network</h1>
-      <p class="splash-subtitle">Soil moisture surveillance across Eastern Kentucky's most landslide-prone terrain</p>
+      <h1 id="splash-title"><?= htmlspecialchars(SITE_NAME) ?></h1>
+      <p><?= htmlspecialchars(SITE_TAGLINE) ?></p>
+      <br>
+      <p class="splash-subtitle">Data displayed on this service is provisional and should be used for informational purposes only. For more information about the network, data, or landslide hazards in Kentucky, please contact the <a href="https://kygs.uky.edu/research/landslides/" target="_blank" rel="noopener">KGS Landslide Hazards and Engineering Team</a>.</p>
     </div>
 
     <div id="splash-body">
@@ -165,7 +240,8 @@ require_once __DIR__ . '/config.php';
           </div>
           <div class="splash-card-text">
             <strong><?= count(STATIONS) ?> Monitoring Stations</strong>
-            <span>Dual-depth soil moisture sensors logging volumetric water content at shallow and deep horizons across Eastern Kentucky</span>
+            <span>Weather station and soil moisture sensors logging volumetric water content and matric potential at two depths. 
+              Values on map show the average volumetric water content for the two depths.</span>
           </div>
         </div>
 
@@ -178,8 +254,9 @@ require_once __DIR__ . '/config.php';
             </svg>
           </div>
           <div class="splash-card-text">
-            <strong>Susceptibility Layer</strong>
-            <span>Toggle the Susceptibility button to overlay KGS's landslide susceptibility model — a lidar-derived, machine-learning classification of slope instability across Eastern Kentucky</span>
+            <strong>Landslide Susceptibility Layer</strong>
+            <span>Toggle the Landslide Susceptibility button to overlay KGS's landslide susceptibility model — <a href="https://kgs.uky.edu/kgsmap/helpfiles/landslidesusc_help.shtm" target="_blank" rel="noopener">a lidar-derived, 
+              machine-learning classification of slopes prone to landslides</a>.</span>
           </div>
         </div>
 
@@ -193,7 +270,7 @@ require_once __DIR__ . '/config.php';
           </div>
           <div class="splash-card-text">
             <strong>14-Day History</strong>
-            <span>Click any station bubble to view sensor readings, matric potential, soil temperature, and precipitation charts</span>
+            <span>Click any station bubble to view weather and sensor readings for the most recent two-week period.</span>
           </div>
         </div>
 
@@ -209,10 +286,54 @@ require_once __DIR__ . '/config.php';
           </div>
           <div class="splash-card-text">
             <strong>Live NEXRAD Radar</strong>
-            <span>Toggle the Radar button to overlay real-time precipitation from the NWS NEXRAD network</span>
+            <span>Toggle the Radar button to overlay real-time precipitation map from the National Weather Service NEXRAD network.</span>
           </div>
         </div>
+
+      <div class="splash-card">
+        <div class="splash-card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 4v6h-6"/>
+            <path d="M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+            <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </div>
+        <div class="splash-card-text">
+          <strong>Auto-Refresh</strong>
+          <span>Toggle Auto-refresh in the map controls to automatically reload station moisture data every 45 minutes. NEXRAD radar tiles refresh automatically on the same interval whenever the radar overlay is active</span>
+        </div>
       </div>
+
+      <div class="splash-card">
+        <div class="splash-card-icon">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="11" stroke="currentColor" stroke-width="2.5"/>
+            <polyline points="16,8 16,16 11,20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M22 5 L25 2 M25 2 v4 M25 2 h-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="splash-card-text">
+          <strong>Time Slider</strong>
+          <span>Step back through up to 14 days of soil moisture history (radar data does not go back in time) using the Time Slider control. Drag left to travel back in time — marker colors update to reflect conditions at that time. Drag fully right to return to live data</span>
+        </div>
+      </div>
+
+      <div class="splash-card">
+        <div class="splash-card-icon">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4" y="8" width="11" height="8" rx="2" fill="currentColor" opacity="0.8"/>
+            <rect x="17" y="8" width="11" height="8" rx="2" fill="currentColor" opacity="0.4"/>
+            <path d="M4 22 h24" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+            <path d="M8 22 v3 M16 22 v3 M24 22 v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="splash-card-text">
+          <strong>Basemap Switcher</strong>
+          <span>Switch between ESRI Topo and Kentucky Aerial 3-inch imagery using the basemap control at the top of the map. The aerial layer uses a neutral gray base to fill areas outside KY coverage</span>
+        </div>
+      </div>
+     </div>
 
       <div class="splash-how">
         <div class="splash-how-title">Reading the Map</div>
@@ -226,16 +347,19 @@ require_once __DIR__ . '/config.php';
             <span class="swatch" style="background:#2a7a52"></span>
           </div>
           <div class="splash-swatch-labels">
-            <span>Very Dry</span>
-            <span style="margin-left:auto">Saturated</span>
+            <span>Dry</span>
+            <span style="margin-left:auto">Wet</span>
           </div>
           <p>Bubble color reflects the average volumetric water content (VWC, m³/m³) across all soil depths at that station. The percentage shown is VWC × 100.</p>
         </div>
       </div>
 
+      
+
       <div class="splash-footer-note">
-        Data refreshed approximately every 30 minutes via Zentra Cloud 2.0 API. 
-        Network operated by the <a href="https://kgs.uky.edu" target="_blank" rel="noopener">Kentucky Geological Survey</a>, University of Kentucky.
+        Data refreshed approximately every 45 minutes via Zentra Cloud 2.0 API.
+        NEXRAD radar shows live precipitation only and cannot be synced to the time slider.
+        Network operated by the <a href="https://kygs.uky.edu/research/landslides/" target="_blank" rel="noopener">Kentucky Geological Survey Landslides Hazards and Engineeering Team</a>, University of Kentucky.
       </div>
 
     </div><!-- /splash-body -->

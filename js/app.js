@@ -42,11 +42,12 @@ require([
   "esri/views/MapView",
   "esri/layers/WebTileLayer",
   "esri/layers/MapImageLayer",
+  "esri/layers/ImageryLayer",
   "esri/Graphic",
   "esri/layers/GraphicsLayer",
   "esri/widgets/Home",
   "esri/widgets/ScaleBar",
-], function (Map, MapView, WebTileLayer, MapImageLayer, Graphic, GraphicsLayer, Home, ScaleBar) {
+], function (Map, MapView, WebTileLayer, MapImageLayer, ImageryLayer, Graphic, GraphicsLayer, Home, ScaleBar) {
 
   // ─── State ───────────────────────────────────────────────────────────────────
   let stationsData    = [];
@@ -54,6 +55,11 @@ require([
   let radarVisible    = false;
   let radarLayer      = null;
   let charts          = {};
+  let autoRefreshTimer = null;
+  const AUTO_REFRESH_INTERVAL = 45 * 60 * 1000; // 45 minutes
+  let timeSliderActive  = false;
+  let historyData       = null;   // loaded once on first activation
+  let timeSliderIndex   = null;   // null = live mode
 
   // ─── Map Setup ───────────────────────────────────────────────────────────────
   const map  = new Map({ basemap: "topo-vector" });
@@ -71,6 +77,46 @@ require([
 
   const stationLayer = new GraphicsLayer({ id: "stations" });
   map.add(stationLayer);
+
+// ─── Basemap Selector ────────────────────────────────────────────────────────
+  let kyImageryLayer = null;
+
+  function switchBasemap(key) {
+    const opts = {
+      "topo-vector": { esriId: "topo-vector", kyImagery: false }, // default ESRI topo
+      "ky-imagery":  { esriId: "gray-vector", kyImagery: true  }, // ESRI gray + KY APED imagery
+    };
+    const opt = opts[key];
+    if (!opt) return;
+
+    // Swap ESRI basemap
+    map.basemap = opt.esriId;
+
+    // Toggle KY APED imagery overlay
+    if (opt.kyImagery) {
+      if (!kyImageryLayer) {
+        kyImageryLayer = new ImageryLayer({
+          url: "https://kyraster.ky.gov/arcgis/rest/services/ImageServices/Ky_KYAPED_Phase3_3IN_WGS84WM/ImageServer",
+          id: "ky-imagery",
+          opacity: 1,
+        });
+        map.add(kyImageryLayer, 1); // above basemap, below stations
+      } else {
+        kyImageryLayer.visible = true;
+      }
+    } else {
+      if (kyImageryLayer) kyImageryLayer.visible = false;
+    }
+
+    // Update button states
+    document.querySelectorAll(".basemap-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.basemap === key);
+    });
+  }
+
+  document.querySelectorAll(".basemap-btn").forEach(btn => {
+    btn.addEventListener("click", () => switchBasemap(btn.dataset.basemap));
+  });
 
   // ─── Landslide Susceptibility Layer ────────────────────────────────────────────
   const susceptibilityLayer = new MapImageLayer({
@@ -171,7 +217,8 @@ require([
     const pillGap = 4;            // gap between pin tip and pill
 
     // Derived positions — all flow from r
-    const svgW   = (r + pad) * 2;
+    const pillW   = Math.max(Math.min(name.length, 28) * 7.6 + 20, 70);
+    const svgW   = Math.max((r + pad) * 2, pillW + 8);
     const cx     = svgW / 2;
     const cy     = r + pad;
     const pinY   = cy + r;        // bottom of bubble = tip of pin base
@@ -182,9 +229,7 @@ require([
     const fontSize    = Math.round(r * 0.58);
     const subFontSize = Math.round(r * 0.22);
 
-    // Pill width scales with name length
-    const nameLen = Math.min(name.length, 22);
-    const pillW   = Math.max(nameLen * 7.2 + 16, 60);
+    // Pill is horizontally centered on the pin, which is centered on the bubble, which is centered in the SVG — so pillX depends on svgW which depends on pillW
     const pillX   = cx - pillW / 2;
 
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">
@@ -211,7 +256,7 @@ require([
       <rect x="${pillX}" y="${pillY - pillH/2}" width="${pillW}" height="${pillH}" rx="4"
             fill="rgba(0,0,0,0.72)" filter="url(#lsh)"/>
       <text x="${cx}" y="${pillY + 4}" text-anchor="middle" font-family="Arial,sans-serif"
-            font-size="11" font-weight="600" fill="white" letter-spacing="0.3">${name.substring(0,22)}</text>
+            font-size="11" font-weight="600" fill="white" letter-spacing="0.3">${name.substring(0,28)}</text>
     </svg>`;
   }
 
@@ -235,7 +280,7 @@ require([
           url:    svgToDataURI(svg),
           // Size must match SVG canvas: r=38 → svgW=(38+6)*2=88, svgH≈120
           // Change these if you change r in buildMarkerSVG
-          width:  "88px",
+          width:  `${Math.max(88, Math.min(station.name.replace(/^Station \d+ — /, "").length, 28) * 7.6 + 28)}px`,
           height: "120px",
           yoffset: "46px",  // = svgH - (pinY + pinH) = distance from bottom to pin tip
         },
@@ -276,11 +321,125 @@ require([
         renderMarkers(stationsData);
         if (data.cached_at) {
           document.getElementById("last-updated").textContent =
-            "Updated " + new Date(data.cached_at).toLocaleTimeString();
+            "Soil Data Updated " + new Date(data.cached_at).toLocaleTimeString();
         }
       })
       .catch(err => console.error("Failed to load stations:", err));
   }
+
+  function setAutoRefresh(enabled) {
+    clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
+    const btn = document.getElementById("autorefresh-toggle");
+    btn.classList.toggle("active", enabled);
+    if (enabled) {
+      autoRefreshTimer = setInterval(() => {
+        loadStations();
+      }, AUTO_REFRESH_INTERVAL);
+    }
+  }
+
+  document.getElementById("autorefresh-toggle").addEventListener("click", function () {
+    setAutoRefresh(!this.classList.contains("active"));
+  });
+
+// ─── Time Slider ─────────────────────────────────────────────────────────────
+  function activateTimeSlider() {
+    timeSliderActive = true;
+    document.getElementById("time-slider-bar").classList.add("visible");
+    document.getElementById("timeslider-toggle").classList.add("active");
+
+    if (historyData) {
+      initSlider();
+      return;
+    }
+
+    document.getElementById("time-slider-status").textContent = "Loading history…";
+    fetch("api/get_history_summary.php")
+      .then(r => r.json())
+      .then(data => {
+        historyData = data;
+        initSlider();
+      })
+      .catch(err => {
+        document.getElementById("time-slider-status").textContent = "Failed to load history";
+        console.error("History load error:", err);
+      });
+  }
+
+  function deactivateTimeSlider() {
+    timeSliderActive = false;
+    timeSliderIndex  = null;
+    document.getElementById("time-slider-bar").classList.remove("visible");
+    document.getElementById("timeslider-toggle").classList.remove("active");
+    // Restore live data
+    renderMarkers(stationsData);
+  }
+
+  function initSlider() {
+    if (!historyData || !historyData.length) return;
+
+    // Collect all unique timestamps across all stations, sorted ascending
+    const tsSet = new Set();
+    historyData.forEach(s => s.series.forEach(([ts]) => tsSet.add(ts)));
+    const timestamps = Array.from(tsSet).sort((a, b) => a - b);
+
+    const slider = document.getElementById("time-slider-input");
+    slider.min   = 0;
+    slider.max   = timestamps.length - 1;
+    slider.value = timestamps.length - 1; // start at most recent
+    window._tsTimestamps = timestamps;
+
+    renderAtIndex(timestamps.length - 1);
+  }
+
+  function renderAtIndex(idx) {
+    if (!historyData || !window._tsTimestamps) return;
+    const ts = window._tsTimestamps[idx];
+    const dt = new Date(ts * 1000);
+
+    document.getElementById("time-slider-status").textContent =
+      dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " +
+      dt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+
+    // Build a lookup of station_id => moisture at this timestamp (nearest match)
+    const moistureAt = {};
+    historyData.forEach(s => {
+      // Find closest timestamp entry
+      let best = null, bestDiff = Infinity;
+      s.series.forEach(([t, v]) => {
+        const diff = Math.abs(t - ts);
+        if (diff < bestDiff) { bestDiff = diff; best = v; }
+      });
+      if (best !== null) moistureAt[s.station_id] = best;
+    });
+
+    // Re-render markers with historical moisture values
+    const historicalStations = stationsData.map(st => ({
+      ...st,
+      latest_moisture_avg: moistureAt[st.station_id] ?? null,
+      latest_moisture_pct: moistureAt[st.station_id] != null
+        ? Math.round(moistureAt[st.station_id] * 1000) / 10
+        : null,
+    }));
+    renderMarkers(historicalStations);
+  }
+
+  document.getElementById("timeslider-toggle").addEventListener("click", function () {
+    timeSliderActive ? deactivateTimeSlider() : activateTimeSlider();
+  });
+
+  document.getElementById("time-slider-input").addEventListener("input", function () {
+    renderAtIndex(parseInt(this.value));
+  });
+
+  // Snap back to live when dragged fully right
+  document.getElementById("time-slider-input").addEventListener("change", function () {
+    if (parseInt(this.value) === parseInt(this.max)) {
+      renderMarkers(stationsData);
+      document.getElementById("time-slider-status").textContent = "Live";
+    }
+  });
 
   // ─── Panel ───────────────────────────────────────────────────────────────────
   function openPanel(stationId) {
@@ -341,7 +500,7 @@ require([
     const temps     = sensors.filter(s => s.type === "soil_temp");
     const others    = sensors.filter(s => s.type === "precipitation");
 
-    let html = `<div class="section-label">Latest Readings</div><div class="latest-grid">`;
+    let html = `<div class="section-label">Latest Readings</div><div class="section-label">Provisional data updated approximately every 45 minutes via Zentra Cloud 2.0 API</div><div class="latest-grid">`;
     if (!sensors.length) {
       html += `<p style="color:var(--muted);font-size:12px;padding:8px 0">No data cached yet — check back after the first refresh cycle.</p>`;
     }

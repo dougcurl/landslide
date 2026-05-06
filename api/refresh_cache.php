@@ -37,7 +37,7 @@ function log_progress(string $msg): void {
         echo $line;
         flush();
     }
-    error_log(trim($msg));
+    //error_log(trim($msg));
 }
 
 // ─── Normalize v5 response into cache format ──────────────────────────────────
