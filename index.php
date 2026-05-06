@@ -52,22 +52,6 @@ require_once __DIR__ . '/config.php';
       <p>Provisional data updated approximately every 45 minutes via Zentra Cloud 2.0 API</p>
     </div>
     <div class="header-right">
-      <button class="radar-toggle" id="susceptibility-toggle" title="Toggle Landslide Susceptibility Layer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 20 L8 10 L13 15 L17 7 L21 20 Z" stroke-linejoin="round"/>
-          <path d="M3 20 h18" stroke-linecap="round"/>
-        </svg>
-        Landslide Susceptibility
-      </button>
-      <button class="radar-toggle" id="radar-toggle" title="Toggle NEXRAD Weather Radar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2a10 10 0 0 1 10 10"/>
-          <path d="M12 6a6 6 0 0 1 6 6"/>
-          <path d="M12 10a2 2 0 0 1 2 2"/>
-          <line x1="12" y1="12" x2="12" y2="2"/>
-        </svg>
-        Radar
-      </button>
       <span id="last-updated"></span>
       <button class="info-btn" id="splash-reopen" title="About this application" aria-label="About">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -82,6 +66,9 @@ require_once __DIR__ . '/config.php';
   <!-- ── Map ────────────────────────────────────────────────────────────── -->
   <div id="map-container">
     <div id="map"></div>
+    <div id="map-loading">
+      <div class="spinner"></div>
+    </div>
 
     <!-- Radar opacity control -->
     <div id="radar-controls">
@@ -121,6 +108,26 @@ require_once __DIR__ . '/config.php';
           <path d="M10 2 L13 7 L18 8 L14 12 L15 18 L10 15 L5 18 L6 12 L2 8 L7 7 Z" stroke-linejoin="round"/>
         </svg>
         KY Aerial (Phase 3)
+      </button>
+
+      <!-- other layers -->
+      <div class="basemap-divider"></div>
+      
+      <button class="radar-toggle" id="susceptibility-toggle" title="Toggle Landslide Susceptibility Layer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 20 L8 10 L13 15 L17 7 L21 20 Z" stroke-linejoin="round"/>
+          <path d="M3 20 h18" stroke-linecap="round"/>
+        </svg>
+        Landslide Susceptibility
+      </button>
+      <button class="radar-toggle" id="radar-toggle" title="Toggle NEXRAD Weather Radar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a10 10 0 0 1 10 10"/>
+          <path d="M12 6a6 6 0 0 1 6 6"/>
+          <path d="M12 10a2 2 0 0 1 2 2"/>
+          <line x1="12" y1="12" x2="12" y2="2"/>
+        </svg>
+        Radar
       </button>
 
       <!-- map behavior buttons -->
@@ -167,7 +174,26 @@ require_once __DIR__ . '/config.php';
         <div class="panel-meta"></div>
         <button id="panel-close" title="Close">×</button>
       </div>
-      <div id="panel-body"></div>
+      <div id="panel-tabs">
+        <button class="panel-tab active" data-tab="info">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="8" cy="5" r="1.5" fill="currentColor" stroke="none"/>
+            <path d="M8 8 v5" stroke-linecap="round"/>
+            <circle cx="8" cy="8" r="6.5"/>
+          </svg>
+          Station Info
+        </button>
+        <button class="panel-tab" data-tab="data">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M2 12 L5 8 L8 10 L11 5 L14 7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Sensor Data
+        </button>
+      </div>
+      <div id="panel-body" style="flex:1;overflow-y:auto;">
+        <div id="tab-info"  class="tab-pane active"></div>
+        <div id="tab-data"  class="tab-pane"></div>
+      </div>
     </div>
 
   </div><!-- /map-container -->
@@ -223,7 +249,9 @@ require_once __DIR__ . '/config.php';
       <h1 id="splash-title"><?= htmlspecialchars(SITE_NAME) ?></h1>
       <p><?= htmlspecialchars(SITE_TAGLINE) ?></p>
       <br>
-      <p class="splash-subtitle">Data displayed on this service is provisional and should be used for informational purposes only. For more information about the network, data, or landslide hazards in Kentucky, please contact the <a href="https://kygs.uky.edu/research/landslides/" target="_blank" rel="noopener">KGS Landslide Hazards and Engineering Team</a>.</p>
+      <p class="splash-subtitle">Data displayed on this service is provisional and should be used for informational purposes only. 
+        For more information about the network, data, or landslide hazards in Kentucky, please contact the 
+        <a href="https://kygs.uky.edu/research/landslides/" target="_blank" rel="noopener">KGS Landslide Hazards and Engineering Team</a>.</p>
     </div>
 
     <div id="splash-body">
@@ -241,7 +269,8 @@ require_once __DIR__ . '/config.php';
           <div class="splash-card-text">
             <strong><?= count(STATIONS) ?> Monitoring Stations</strong>
             <span>Weather station and soil moisture sensors logging volumetric water content and matric potential at two depths. 
-              Values on map show the average volumetric water content for the two depths.</span>
+              Values on map show the average volumetric water content for the two depths. 
+              <a href="stations.php" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">View details for all stations.</a></span>
           </div>
         </div>
 
@@ -255,8 +284,9 @@ require_once __DIR__ . '/config.php';
           </div>
           <div class="splash-card-text">
             <strong>Landslide Susceptibility Layer</strong>
-            <span>Toggle the Landslide Susceptibility button to overlay KGS's landslide susceptibility model — <a href="https://kgs.uky.edu/kgsmap/helpfiles/landslidesusc_help.shtm" target="_blank" rel="noopener">a lidar-derived, 
-              machine-learning classification of slopes prone to landslides</a>.</span>
+            <span>Toggle the Landslide Susceptibility button to overlay KGS's landslide susceptibility model — a lidar-derived, 
+              machine-learning classification of slopes prone to landslides. 
+              <a href="https://kgs.uky.edu/kgsmap/helpfiles/landslidesusc_help.shtm" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">More information</a>.</span>
           </div>
         </div>
 
@@ -365,7 +395,7 @@ require_once __DIR__ . '/config.php';
     </div><!-- /splash-body -->
 
     <div id="splash-actions">
-      <button id="splash-close" autofocus>
+      <button id="splash-close">
         Explore the Network
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 10h12M10 4l6 6-6 6"/>

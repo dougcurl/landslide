@@ -181,7 +181,7 @@ function normalize_station_data_v5(array $station, array $raw_response): array {
 
     return [
         'station_id'          => $device_id,
-        'name'                => $device_meta['device_name'] ?? $station['name'],
+        'name'                => $station['name'] ?: ($device_meta['device_name'] ?? ''),
         'lat'                 => $lat,
         'lng'                 => $lng,
         'region'              => $station['region'],

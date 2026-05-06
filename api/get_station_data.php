@@ -1,7 +1,8 @@
 <?php
 /**
  * api/get_station_data.php?id=z6-00001
- * Returns station metadata, latest sensors, and downsampled 14-day history.
+ * Returns station metadata, latest sensors, downsampled 14-day history,
+ * site_info from config, and 24-hour rainfall total.
  * Called when a user clicks a map marker to open the detail panel.
  */
 
@@ -66,12 +67,39 @@ if (!$data) {
 // ── Downsample history for the panel ─────────────────────────────────────────
 // Full cache has 15-min readings (~1300 rows). Chart only needs ~hourly resolution
 // to show 14-day trends — keep every 4th row (= one per hour).
-// This cuts response size from ~3–5 MB down to ~300–500 KB.
 $full_history = $data['history'] ?? [];
 $sampled = [];
 foreach ($full_history as $i => $row) {
     if ($i % 4 === 0) $sampled[] = $row;
 }
+
+// ── 24-hour rainfall total ────────────────────────────────────────────────────
+// Sum all precipitation readings in the last 86400 seconds.
+// Each reading in the cache represents one 15-min interval value in mm.
+// We simply sum them — do NOT divide (they're already interval totals, not rates).
+$cutoff_ts      = time() - 86400;
+$rainfall_24h   = null;
+$rainfall_count = 0;
+
+foreach ($full_history as $row) {
+    $row_ts = strtotime($row['datetime'] ?? '');
+    if (!$row_ts || $row_ts < $cutoff_ts) continue;
+
+    foreach ($row['sensors'] as $s) {
+        if ($s['type'] === 'precipitation' && $s['value'] !== null) {
+            $rainfall_24h = ($rainfall_24h ?? 0) + $s['value'];
+            $rainfall_count++;
+        }
+    }
+}
+
+if ($rainfall_24h !== null) {
+    $rainfall_24h = round($rainfall_24h, 2);
+}
+
+// ── site_info from config ─────────────────────────────────────────────────────
+// Sourced directly from config.php so it's always current without a cache rebuild.
+$site_info = $station_cfg['site_info'] ?? null;
 
 echo json_encode([
     'station_id'          => $data['station_id'],
@@ -87,4 +115,6 @@ echo json_encode([
     'latest_sensors'      => $data['latest_sensors'] ?? [],
     'history'             => $sampled,
     'cache_age_seconds'   => $cache_age,
+    'rainfall_24h_mm'     => $rainfall_24h,    // null if no precip sensor
+    'site_info'           => $site_info,        // null if not set in config
 ], JSON_UNESCAPED_UNICODE);

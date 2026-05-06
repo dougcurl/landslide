@@ -314,9 +314,11 @@ require([
 
   // ─── Load Stations ───────────────────────────────────────────────────────────
   function loadStations() {
+    document.getElementById("last-updated").textContent = "Loading…";
     fetch("api/get_stations.php")
       .then(r => r.json())
       .then(data => {
+        document.getElementById("map-loading").classList.add("hidden");
         stationsData = data.stations || [];
         renderMarkers(stationsData);
         if (data.cached_at) {
@@ -474,11 +476,28 @@ require([
 
   document.getElementById("panel-close").addEventListener("click", closePanel);
 
+  document.querySelectorAll('.panel-tab').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.panel-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      this.classList.add('active');
+      document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+    });
+  });
+
   function showPanelLoading() {
     document.getElementById("panel-header").querySelector(".panel-title").textContent = "Loading…";
     document.getElementById("panel-header").querySelector(".panel-meta").textContent  = "";
-    document.getElementById("panel-body").innerHTML =
-      `<div id="panel-loading"><div class="spinner"></div><p>Fetching station data…</p></div>`;
+  
+    const loadingHTML = `<div id="panel-loading"><div class="spinner"></div><p>Fetching station data…</p></div>`;
+    document.getElementById("tab-info").innerHTML = loadingHTML;
+    document.getElementById("tab-data").innerHTML = "";
+  
+    // Switch to info tab while loading
+    document.querySelectorAll('.panel-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelector('.panel-tab[data-tab="info"]').classList.add('active');
+    document.getElementById('tab-info').classList.add('active');
   }
 
   function showPanelError(msg) {
@@ -488,34 +507,177 @@ require([
   // ─── Panel Content ───────────────────────────────────────────────────────────
   function renderPanelContent(data) {
     destroyCharts();
-
+  
+    // ── Header ────────────────────────────────────────────────────────────────
     document.getElementById("panel-header").querySelector(".panel-title").textContent = data.name;
     const dt = data.latest_datetime ? new Date(data.latest_datetime).toLocaleString() : "No data yet";
     document.getElementById("panel-header").querySelector(".panel-meta").textContent =
       `${data.region}  •  Last reading: ${dt}`;
-
+  
+    // Switch to info tab first (it's the default)
+    document.querySelectorAll('.panel-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelector('.panel-tab[data-tab="info"]').classList.add('active');
+    document.getElementById('tab-info').classList.add('active');
+  
+    // ── Station Info Tab ──────────────────────────────────────────────────────
+    renderInfoTab(data);
+  
+    // ── Sensor Data Tab ───────────────────────────────────────────────────────
+    renderDataTab(data);
+  }
+  
+  // ────────────────────────────────────────────────────────────────────────────
+  // STATION INFO TAB
+  // ────────────────────────────────────────────────────────────────────────────
+  
+  function renderInfoTab(data) {
+    const si = data.site_info;
+    const infoEl = document.getElementById('tab-info');
+  
+    // Photo or placeholder
+    let photoHTML = '';
+    if (si && si.image) {
+      photoHTML = `<img src="img/${escHtml(si.image)}" alt="Photo of ${escHtml(data.name)}"
+                        class="station-photo"
+                        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                  <div class="station-photo-placeholder" style="display:none">
+                    ${cameraIcon()} No photo available
+                  </div>`;
+    } else {
+      photoHTML = `<div class="station-photo-placeholder">
+                    ${cameraIcon()} No photo available
+                  </div>`;
+    }
+  
+    // Build info rows
+    let rows = '';
+  
+    if (si) {
+      rows += infoRow('Geologic Unit',   si.geologic_unit  || '—');
+      rows += infoRow('Soil Unit',       si.soil_unit      || '—');
+      rows += infoRow('Elevation',       si.elevation_m != null ? si.elevation_m + ' m' : '—');
+      rows += infoRow('Slope',           si.slope_deg  != null ? si.slope_deg + '°' : '—');
+      rows += infoRow('Landslide Susceptibility',  susceptibilityBadge(si.susceptibility));
+      rows += infoRow('Sensor Depths',   si.sensor_depths  || '—');
+      rows += infoRow('Installed',       si.date_installed || '—');
+      rows += infoRow('Collaborator',    si.collaborator   || '—');
+    }
+  
+    // Coordinates always shown (from API/config)
+    if (data.lat && data.lng) {
+      rows += infoRow('Coordinates',
+        `<span class="coords-text">${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}</span>`);
+    }
+  
+    // Station ID
+    rows += infoRow('Station ID', `<span class="coords-text">${escHtml(data.station_id)}</span>`);
+  
+    if (!si && !data.lat) {
+      rows = `<tr><td colspan="2" style="color:var(--text-muted);padding:16px;font-size:12px;">
+                No site information available for this station.
+              </td></tr>`;
+    }
+  
+    infoEl.innerHTML = `
+      ${photoHTML}
+      <table class="site-info-table">
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+  
+  function infoRow(label, value) {
+    return `<tr><td>${label}</td><td>${value}</td></tr>`;
+  }
+  
+  function susceptibilityBadge(val) {
+    if (!val) return '<span class="susc-badge susc-unknown">—</span>';
+    const v = val.trim().toLowerCase();
+    if (v === 'data currently unavailable' || v === 'data unavailable') {
+      return '<span class="susc-badge susc-unknown">Data unavailable</span>';
+    }
+    const cls = {
+      'very low':  'susc-very-low',
+      'low':       'susc-low',
+      'moderate':  'susc-moderate',
+      'high':      'susc-high',
+      'very high': 'susc-very-high',
+    }[v] || 'susc-unknown';
+    return `<span class="susc-badge ${cls}">${escHtml(val)}</span>`;
+  }
+  
+  function cameraIcon() {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>`;
+  }
+  
+  function escHtml(s) {
+    if (!s) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+  
+  // ────────────────────────────────────────────────────────────────────────────
+  // SENSOR DATA TAB
+  // ────────────────────────────────────────────────────────────────────────────
+  
+  function renderDataTab(data) {
     const sensors   = data.latest_sensors || [];
     const moistures = sensors.filter(s => s.type === "soil_moisture");
     const matrics   = sensors.filter(s => s.type === "matric_potential");
     const temps     = sensors.filter(s => s.type === "soil_temp");
-    const others    = sensors.filter(s => s.type === "precipitation");
-
-    let html = `<div class="section-label">Latest Readings</div><div class="section-label">Provisional data updated approximately every 45 minutes via Zentra Cloud 2.0 API</div><div class="latest-grid">`;
+    const precips   = sensors.filter(s => s.type === "precipitation");
+  
+    let html = `
+      <div style="padding:18px 20px;">
+        <div class="section-label">Latest Readings</div>
+        <div class="section-label" style="margin-top:-6px;margin-bottom:12px;font-size:10px;">
+          Provisional data updated approximately every 45 minutes via Zentra Cloud 2.0 API
+        </div>
+        <div class="latest-grid">`;
+  
     if (!sensors.length) {
-      html += `<p style="color:var(--muted);font-size:12px;padding:8px 0">No data cached yet — check back after the first refresh cycle.</p>`;
+      html += `<p style="color:var(--text-muted);font-size:12px;padding:8px 0;grid-column:1/-1;">
+                No data cached yet — check back after the first refresh cycle.
+              </p>`;
     }
+  
     moistures.forEach(s => html += sensorCard(s, "sc-moisture"));
     matrics.forEach(s   => html += sensorCard(s, "sc-matric"));
     temps.forEach(s     => html += sensorCard(s, "sc-temp"));
-    others.forEach(s    => html += sensorCard(s, "sc-precip"));
-    html += `</div>`;
-
+  
+    // Precipitation: show 24-hr total instead of latest interval reading
+    if (precips.length > 0) {
+      const rain24 = data.rainfall_24h_mm;
+      if (rain24 !== null && rain24 !== undefined) {
+        html += `
+          <div class="sensor-card sc-precip">
+            <div class="sc-type">Precipitation (24h)</div>
+            <div class="sc-value">${rain24.toFixed(1)}</div>
+            <div class="sc-unit">mm</div>
+            <div class="sc-label">Last 24 hours total</div>
+          </div>`;
+      } else {
+        // Fall back to latest reading if 24h can't be computed
+        precips.forEach(s => html += sensorCard(s, "sc-precip"));
+      }
+    }
+  
+    html += `</div>`;  // close latest-grid
+  
+    // Charts
     const chartTypes = [
       { key: "soil_moisture",    label: "Soil Moisture (m³/m³)",          id: "chart-moisture" },
       { key: "matric_potential", label: "Matric (Water) Potential (kPa)", id: "chart-matric"   },
       { key: "soil_temp",        label: "Soil Temperature (°C)",           id: "chart-temp"     },
+      { key: "precipitation",    label: "Precipitation (mm)",              id: "chart-precip"   },
     ];
-
+  
     chartTypes.forEach(ct => {
       const hasData = (data.history || []).some(row =>
         (row.sensors || []).some(s => s.type === ct.key)
@@ -527,9 +689,11 @@ require([
           <div class="chart-wrapper"><canvas id="${ct.id}"></canvas></div>
         </div>`;
     });
-
-    document.getElementById("panel-body").innerHTML = html;
-
+  
+    html += `</div>`; // close padding wrapper
+  
+    document.getElementById("tab-data").innerHTML = html;
+  
     chartTypes.forEach(ct => {
       if (document.getElementById(ct.id)) {
         renderChart(ct.id, ct.key, data.history || [], ct.label);
@@ -562,7 +726,13 @@ require([
   }
 
   // ─── Charts ──────────────────────────────────────────────────────────────────
-  const DEPTH_COLORS = ["#5dba7d","#c9a84c","#4a9ebb","#d4793a","#a07dd4"];
+  const CHART_COLORS = {
+    soil_moisture:    ["#55afd4", "#4a8fc4", "#3a6fa4", "#2a4f84"],  // blues
+    matric_potential: ["#a07dd4", "#8a5fc4", "#7a4fb4", "#6a3fa4"],  // purples
+    soil_temp:        ["#e0844a", "#c4703a", "#a85c2a", "#8c481a"],  // ambers
+    precipitation:    ["#5ec47f", "#4aaa6a", "#369055", "#227640"],  // greens
+  };
+  const DEPTH_COLORS = ["#55afd4","#a07dd4","#e0844a","#5ec47f","#d4793a"]; // fallback
 
   function renderChart(canvasId, sensorType, history, yLabel) {
     // Use plain object instead of Map for broadest compatibility
@@ -580,11 +750,12 @@ require([
     const depthKeys = Object.keys(depthLabels);
     if (!depthKeys.length) return;
 
+    const palette = CHART_COLORS[sensorType] || DEPTH_COLORS;
     const datasets  = depthKeys.map((key, i) => ({
       label:           depthLabels[key],
       data:            [],
-      borderColor:     DEPTH_COLORS[i % DEPTH_COLORS.length],
-      backgroundColor: DEPTH_COLORS[i % DEPTH_COLORS.length] + "22",
+      borderColor:     palette[i % palette.length],
+      backgroundColor: palette[i % palette.length] + "22",
       borderWidth: 1.5, pointRadius: 0, tension: 0.3, fill: false,
     }));
 
@@ -631,12 +802,12 @@ require([
             type: "time",
             time: { unit: "day", displayFormats: { day: "MMM d" } },
             grid:  { color: "rgba(120,180,140,0.07)" },
-            ticks: { color: "#5a7a65", font: { family: "DM Mono", size: 9 }, maxRotation: 0 }
+            ticks: { color: "#b8d4c0", font: { family: "DM Mono", size: 9 }, maxRotation: 0 }
           },
           y: {
             grid:  { color: "rgba(120,180,140,0.07)" },
-            ticks: { color: "#5a7a65", font: { family: "DM Mono", size: 9 } },
-            title: { display: true, text: yAxisLabel, color: "#5a7a65",
+            ticks: { color: "#b8d4c0", font: { family: "DM Mono", size: 9 } },
+            title: { display: true, text: yAxisLabel, color: "#b8d4c0",
                      font: { family: "DM Mono", size: 9 } }
           }
         }
@@ -655,6 +826,23 @@ require([
   // ─── Init ────────────────────────────────────────────────────────────────────
   view.when(() => {
     loadStations();
+
+    // If a station ID was passed in the URL hash, open it once markers load
+    const hashId = window.location.hash.replace('#', '');
+    if (hashId) {
+      // Wait for stations to load then zoom + open panel
+      const pollForStation = setInterval(() => {
+        const match = stationsData.find(s => s.station_id === hashId);
+        if (!match) return;
+        clearInterval(pollForStation);
+
+        view.goTo({ target: [match.lng, match.lat], zoom: 14 }, { duration: 1200 });
+        openPanel(hashId);
+      }, 200);
+
+      // Give up after 15 seconds if station never loads
+      setTimeout(() => clearInterval(pollForStation), 15000);
+    }
   });
 
 }); // end require
