@@ -47,7 +47,8 @@ require([
   "esri/layers/GraphicsLayer",
   "esri/widgets/Home",
   "esri/widgets/ScaleBar",
-], function (Map, MapView, WebTileLayer, MapImageLayer, ImageryLayer, Graphic, GraphicsLayer, Home, ScaleBar) {
+  "esri/widgets/Expand",  
+], function (Map, MapView, WebTileLayer, MapImageLayer, ImageryLayer, Graphic, GraphicsLayer, Home, ScaleBar, Expand) {
 
   // ─── State ───────────────────────────────────────────────────────────────────
   let stationsData    = [];
@@ -112,6 +113,75 @@ require([
     document.querySelectorAll(".basemap-btn").forEach(btn => {
       btn.classList.toggle("active", btn.dataset.basemap === key);
     });
+
+    const basemapContent = document.createElement("div");
+    basemapContent.id = "basemap-selector";
+    basemapContent.innerHTML = `
+      <button class="basemap-btn active" data-basemap="topo-vector" title="ESRI Topographic basemap">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M2 15 L6 8 L10 12 L14 5 L18 15Z" stroke-linejoin="round"/>
+          <path d="M2 15 h16" stroke-linecap="round" opacity="0.5"/>
+        </svg>
+        ESRI Topo
+      </button>
+      <button class="basemap-btn" data-basemap="ky-imagery" title="Kentucky APED 3-inch aerial">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
+          <path d="M10 2 L13 7 L18 8 L14 12 L15 18 L10 15 L5 18 L6 12 L2 8 L7 7 Z" stroke-linejoin="round"/>
+        </svg>
+        KY Aerial (Phase 3)
+      </button>
+      <div class="basemap-divider"></div>
+      <button class="radar-toggle" id="susceptibility-toggle" title="Toggle Landslide Susceptibility Layer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 20 L8 10 L13 15 L17 7 L21 20 Z" stroke-linejoin="round"/>
+          <path d="M3 20 h18" stroke-linecap="round"/>
+        </svg>
+        Landslide Susceptibility
+      </button>
+      <button class="radar-toggle" id="radar-toggle" title="Toggle NEXRAD Weather Radar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a10 10 0 0 1 10 10"/>
+          <path d="M12 6a6 6 0 0 1 6 6"/>
+          <path d="M12 10a2 2 0 0 1 2 2"/>
+          <line x1="12" y1="12" x2="12" y2="2"/>
+        </svg>
+        Radar
+      </button>
+      <div class="basemap-divider"></div>
+      <button class="basemap-btn" id="autorefresh-toggle" title="Auto-refresh station data every 45 minutes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M23 4v6h-6"/>
+          <path d="M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/>
+          <path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        Auto-refresh
+      </button>
+      <button class="basemap-btn" id="timeslider-toggle" title="View historical soil moisture">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12,6 12,12 9,15"/>
+          <path d="M16.5 4.5 L19 2 M19 2 v4 M19 2 h-4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Soil Moisture Time Slider
+      </button>
+    `;
+
+    // Wire up all button events on the new element
+    basemapContent.querySelectorAll(".basemap-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.basemap === key);
+    });
+    
+    const basemapExpand = new Expand({
+      view,
+      content: basemapContent,
+      expanded: true,
+      expandIconClass: "esri-icon-layer-list",
+      expandTooltip: "Map Controls",
+      collapseTooltip: "Map Controls",
+    });
+
+    view.ui.add(basemapExpand, "top-center");
   }
 
   document.querySelectorAll(".basemap-btn").forEach(btn => {

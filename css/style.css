@@ -274,6 +274,14 @@ html, body {
   max-width: 450px;
 }
 
+ #basemap-selector {
+   position: static;     /* override the absolute positioning */
+   transform: none;
+   top: auto;
+   left: auto;
+   max-width: 320px;
+ }
+
 .basemap-divider {
   width: 100%;
   height: 1px;
