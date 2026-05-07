@@ -8,7 +8,7 @@ Interactive web map displaying real-time soil moisture data from 24 Zentra Cloud
 - **Backend**: PHP 8.x on IIS (Windows Server)
 - **Data source**: Zentra Cloud 2.0 API v5 (`api.zentracloud.io`)
 - **Caching**: PHP flat-file JSON in `cache/` subfolder
-- **Deployment path**: `\\kgsgarnet\webshare\kygeode\services\landslide\`
+- **Deployment path**: `\\[server-name-and-directory]\slope-monitoring\`
 
 ---
 
