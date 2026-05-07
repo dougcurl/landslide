@@ -1,6 +1,6 @@
-# KGS Landslide Monitoring Network
+# KGS Slope Hydrologic Monitoring Network
 
-Interactive web map displaying real-time soil moisture data from ~25 Zentra Cloud 2.0 monitoring stations across Kentucky. Click any station marker to view 14-day sensor history, multi-depth charts, and live NEXRAD radar overlay.
+Interactive web map displaying real-time soil moisture data from 24 Zentra Cloud 2.0 monitoring stations across Kentucky. Click any station marker to view 14-day sensor history, multi-depth charts, and live NEXRAD radar overlay.
 
 ## Stack
 
