@@ -1,6 +1,6 @@
-# KGS Landslide Monitoring Network
+# KGS Slope Hydrologic Monitoring Network
 
-Interactive web map displaying real-time soil moisture data from ~25 Zentra Cloud 2.0 monitoring stations across Kentucky. Click any station marker to view 14-day sensor history, multi-depth charts, and live NEXRAD radar overlay.
+Interactive web map displaying real-time soil moisture data from 24 Zentra Cloud 2.0 monitoring stations across Kentucky. Click any station marker to view 14-day sensor history, multi-depth charts, and live NEXRAD radar overlay.
 
 ## Stack
 
@@ -8,7 +8,7 @@ Interactive web map displaying real-time soil moisture data from ~25 Zentra Clou
 - **Backend**: PHP 8.x on IIS (Windows Server)
 - **Data source**: Zentra Cloud 2.0 API v5 (`api.zentracloud.io`)
 - **Caching**: PHP flat-file JSON in `cache/` subfolder
-- **Deployment path**: `\\kgsgarnet\webshare\kygeode\services\landslide\`
+- **Deployment path**: `\\[server-name-and-directory]\slope-monitoring\`
 
 ---
 
@@ -35,7 +35,7 @@ Interactive web map displaying real-time soil moisture data from ~25 Zentra Clou
 ### 1. Deploy files
 Copy everything to:
 ```
-\\kgsgarnet\webshare\kygeode\services\landslide\
+\\[server-name-and-directory]\slope-monitoring\
 ```
 
 ### 2. Get your API token
@@ -55,14 +55,14 @@ This is the **only** file that needs the token. Do not put it anywhere else.
 
 ### 4. Create the cache folder
 ```
-mkdir \\kgsgarnet\webshare\kygeode\services\landslide\cache
+mkdir \\[server-name-and-directory]\slope-monitoring\cache
 ```
-The IIS app pool account already has write access to this share.
+Make sure the the IIS app pool account has write access to this share.
 
 ### 5. Run the setup helper
 Browse to:
 ```
-http://kgs.uky.edu/landslide/api/setup_helper.php?key=kgs-setup-2024
+/api/setup_helper.php?key=kgs-setup-2024
 ```
 
 Enter your device serial numbers (one per line) in the **Enter Serial Numbers** tab. Find serial numbers in `app.zentracloud.io → Devices`. Format: `z6-XXXXX`.
@@ -79,7 +79,7 @@ The helper will call the v5 API for each device, detect sensor ports and measure
 ### 6. Run an initial cache population
 With stations configured, run the cache refresh once manually before setting up the scheduler. This takes several minutes due to v5 rate limits (~62 seconds between stations after the first 5):
 ```
-C:\php\php.exe \\kgsgarnet\webshare\kygeode\services\landslide\api\refresh_cache.php
+C:\php\php.exe \\[server-name-and-directory]\slope-monitoring\api\refresh_cache.php
 ```
 
 ### 7. Set up Task Scheduler
