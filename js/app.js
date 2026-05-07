@@ -47,7 +47,9 @@ require([
   "esri/layers/GraphicsLayer",
   "esri/widgets/Home",
   "esri/widgets/ScaleBar",
-], function (Map, MapView, WebTileLayer, MapImageLayer, ImageryLayer, Graphic, GraphicsLayer, Home, ScaleBar) {
+  "esri/widgets/Expand",
+  "esri/widgets/Legend",
+], function (Map, MapView, WebTileLayer, MapImageLayer, ImageryLayer, Graphic, GraphicsLayer, Home, ScaleBar, Expand, Legend) {
 
   // ─── State ───────────────────────────────────────────────────────────────────
   let stationsData    = [];
@@ -172,12 +174,6 @@ require([
   // Wire all events to basemapContent, not document
   basemapContent.querySelectorAll(".basemap-btn[data-basemap]").forEach(btn => {
     btn.addEventListener("click", () => switchBasemap(btn.dataset.basemap));
-  });
-
-  basemapContent.querySelector("#susceptibility-toggle").addEventListener("click", function () {
-    const isOn = !susceptibilityLayer.visible;
-    susceptibilityLayer.visible = isOn;
-    this.classList.toggle("active", isOn);
   });
 
   basemapContent.querySelector("#radar-toggle").addEventListener("click", function () {
@@ -490,7 +486,7 @@ require([
         renderMarkers(stationsData);
         if (data.cached_at) {
           document.getElementById("last-updated").textContent =
-            "Soil Data Updated " + new Date(data.cached_at).toLocaleTimeString();
+            "Data Updated " + new Date(data.cached_at).toLocaleTimeString();
         }
       })
       .catch(err => console.error("Failed to load stations:", err));
@@ -766,7 +762,7 @@ require([
       rows += infoRow('Landslide Susceptibility',  susceptibilityBadge(si.susceptibility));
       rows += infoRow('Sensor Depths',   si.sensor_depths  || '—');
       rows += infoRow('Installed',       si.date_installed || '—');
-      rows += infoRow('Collaborator',    si.collaborator   || '—');
+      rows += infoRow('Collaborator',    si.collaborator   || '—');    
     }
   
     // Coordinates always shown (from API/config)
@@ -784,6 +780,8 @@ require([
               </td></tr>`;
     }
   
+    rows += infoRow('<img src="img/CLIMBSLogo.png" alt="CLIMBS" style="height:28px;width:auto;background:white;border-radius:3px;padding:2px 6px;margin-top:2px;">','');
+
     infoEl.innerHTML = `
       ${photoHTML}
       <table class="site-info-table">
@@ -1031,6 +1029,36 @@ require([
   // ─── Init ────────────────────────────────────────────────────────────────────
   view.when(() => {
     loadStations();
+
+    const susceptibilityLegend = new Legend({
+      view,
+      layerInfos: [{
+        layer: susceptibilityLayer,
+        title: "Landslide Susceptibility",
+      }],
+      style: "classic",
+    });
+
+    const legendExpand = new Expand({
+      view,
+      content: susceptibilityLegend,
+      expanded: false,
+      expandIconClass: "esri-icon-legend",
+      expandTooltip: "Susceptibility Legend",
+      collapseTooltip: "Susceptibility Legend",
+      id: "susceptibility-legend-expand",
+    });
+
+    view.ui.add(legendExpand, "bottom-left");
+
+    // Show/hide legend expand with the layer toggle
+    basemapContent.querySelector("#susceptibility-toggle").addEventListener("click", function () {
+      const isOn = !susceptibilityLayer.visible;
+      susceptibilityLayer.visible = isOn;
+      this.classList.toggle("active", isOn);
+      legendExpand.visible  = isOn;
+      legendExpand.expanded = isOn; // auto-open when layer turns on
+    });
 
     // If a station ID was passed in the URL hash, open it once markers load
     const hashId = window.location.hash.replace('#', '');

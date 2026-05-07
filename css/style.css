@@ -101,6 +101,33 @@ html, body {
   filter: brightness(0) invert(1);
 }
 
+/* ─── CLIMBS logo ────────────────────────────────────────────── */
+.climbs-logo-link {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.climbs-logo-link:hover { opacity: 0.85; }
+
+.climbs-logo {
+  height: 52px;
+  width: auto;
+  display: block;
+  background: rgb(238, 238, 238);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.logo-stack {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
 .header-divider {
   width: 1px;
   height: 32px;
@@ -191,6 +218,44 @@ html, body {
 .download-format:hover {
   border-color: var(--accent-green);
   color: var(--text-primary);
+}
+
+/* ─── ArcGIS Legend widget ───────────────────────────────────── */
+.esri-legend {
+  background: var(--bg-panel) !important;
+  color: var(--text-primary) !important;
+}
+
+.esri-legend__service-label {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  color: var(--text-muted) !important;
+}
+
+.esri-legend__layer-caption {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  color: var(--text-muted) !important;
+  display: none; /* hide redundant sublayer title */
+}
+
+.esri-legend__layer-cell--info {
+  font-family: var(--font-body) !important;
+  font-size: 12px !important;
+  color: var(--text-secondary) !important;
+}
+
+.esri-expand__container .esri-widget--button {
+  background-color: var(--bg-panel) !important;
+  border: 1px solid var(--border-bright) !important;
+  color: var(--text-secondary) !important;
+}
+
+.esri-expand__container .esri-widget--button:hover {
+  background-color: var(--bg-card-hover) !important;
+  color: var(--text-primary) !important;
 }
 
 /* ─── Radar Toggle Button ────────────────────────────────────── */
@@ -995,6 +1060,36 @@ html, body {
 }
 
 /* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .logo-stack {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .kgs-logo { height: 32px; }
+  .climbs-logo { height: 32px; }
+
+  .title-block h1 {
+    font-size: 18px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .header-right {
+    width: 100%;
+    margin-left: 15px;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .title-block p:first-of-type {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   :root { --panel-width: 100vw; --header-h: auto; }
 
@@ -1007,13 +1102,22 @@ html, body {
   .kgs-logo { height: 28px; }
   .header-divider { display: none; }
 
+  .logo-stack {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .climbs-logo { height: 28px; }
+
   .title-block {
     flex: 1;
     min-width: 0;
+    margin-left:5px;
   }
 
   .title-block h1 {
-    font-size: 13px;
+    font-size: 15px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1021,7 +1125,7 @@ html, body {
 
   .header-right {
     width: 100%;
-    margin-left: 0;
+    margin-left: 5px;
     justify-content: flex-start;
     flex-wrap: wrap;
     gap: 6px;

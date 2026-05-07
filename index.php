@@ -41,15 +41,20 @@ require_once __DIR__ . '/config.php';
 
   <!-- ── Header ─────────────────────────────────────────────────────────── -->
   <header id="header">
-    <a href="https://kgs.uky.edu" target="_blank" rel="noopener" class="kgs-logo-link" title="Kentucky Geological Survey">
-      <img src="https://kgs.uky.edu/kygeode/img/UK-KGSlogos/KGS-new/kgs-logo-final.png"
-           alt="Kentucky Geological Survey" class="kgs-logo">
-    </a>
-    <div class="header-divider"></div>
-    <div class="title-block">
+      <div class="logo-stack">
+        <a href="https://kgs.uky.edu" target="_blank" rel="noopener" class="kgs-logo-link" title="Kentucky Geological Survey">
+          <img src="https://kgs.uky.edu/kygeode/img/UK-KGSlogos/KGS-new/kgs-logo-final.png"
+              alt="Kentucky Geological Survey" class="kgs-logo">
+        </a>
+        <a href="https://kynsfepscor.uky.edu/climbs/" target="_blank" rel="noopener" class="climbs-logo-link" title="CLIMBS">
+          <img src="img/CLIMBSLogo.png" alt="CLIMBS" class="climbs-logo">
+        </a>
+      </div>
+      <div class="header-divider"></div>
+      <div class="title-block">
       <h1><?= htmlspecialchars(SITE_NAME) ?></h1>
       <p><?= htmlspecialchars(SITE_ORG) ?> &nbsp;·&nbsp; <?= count(STATIONS) ?> Monitoring Stations</p>
-      <p>Provisional data updated approximately every 45 minutes via Zentra Cloud 2.0 API</p>
+      <p>Provisional data updated approximately every 45 minutes</p>
     </div>
     <div class="header-right">
       <span id="last-updated"></span>
@@ -206,9 +211,11 @@ require_once __DIR__ . '/config.php';
   <div id="splash-modal">
 
     <div id="splash-header">
-      <div class="splash-logo-row">
+      <div class="splash-logo-row" style="display:flex;align-items:center;gap:16px;">
         <img src="https://kgs.uky.edu/kygeode/img/UK-KGSlogos/KGS-new/kgs-logo-final.png"
-             alt="Kentucky Geological Survey" class="splash-logo">
+            alt="Kentucky Geological Survey" class="splash-logo">
+        <img src="img/CLIMBSLogo.png" alt="CLIMBS" 
+            style="height:44px;width:auto;background:white;border-radius:4px;padding:3px 8px;filter:none;">
       </div>
       <div class="splash-tag">Real-Time Monitoring Network</div>
       <h1 id="splash-title"><?= htmlspecialchars(SITE_NAME) ?></h1>
