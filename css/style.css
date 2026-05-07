@@ -134,6 +134,65 @@ html, body {
   gap: 14px;
 }
 
+/* ─── Download button in panel header ───────────────────────── */
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  margin-top: 8px;
+}
+ 
+.download-btn svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+ 
+.download-btn:hover {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: rgba(94,196,127,0.08);
+  text-decoration: none;
+}
+ 
+/* Format picker dropdown next to download button */
+.download-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+ 
+.download-format {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 7px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+ 
+.download-format:hover {
+  border-color: var(--accent-green);
+  color: var(--text-primary);
+}
+
 /* ─── Radar Toggle Button ────────────────────────────────────── */
 .radar-toggle {
   display: flex;

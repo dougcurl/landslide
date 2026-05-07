@@ -631,6 +631,8 @@ require([
     document.getElementById("detail-panel").classList.remove("open");
     destroyCharts();
     renderMarkers(stationsData); // re-render to remove active ring
+    const dlRow = document.getElementById('panel-download-row');
+    if (dlRow) dlRow.remove();
   }
 
   document.getElementById("panel-close").addEventListener("click", closePanel);
@@ -670,8 +672,9 @@ require([
     // ── Header ────────────────────────────────────────────────────────────────
     document.getElementById("panel-header").querySelector(".panel-title").textContent = data.name;
     const dt = data.latest_datetime ? new Date(data.latest_datetime).toLocaleString() : "No data yet";
-    document.getElementById("panel-header").querySelector(".panel-meta").textContent =
-      `${data.region}  •  Last reading: ${dt}`;
+    document.getElementById("panel-header").querySelector(".panel-meta").textContent =`${data.region}  •  Last reading: ${dt}`;
+
+    renderDownloadRow(data.station_id);
   
     // Switch to info tab first (it's the default)
     document.querySelectorAll('.panel-tab').forEach(b => b.classList.remove('active'));
@@ -686,6 +689,49 @@ require([
     renderDataTab(data);
   }
   
+ // ────────────────────────────────────────────────────────────────────────────
+ // DOWNLOAD BUTTON ─────────────────────────────────────────────────────────────
+ // Renders the download button and format selector in the panel header, with click handler to trigger download
+ // -------------------------------------------------------------------------------
+  function renderDownloadRow(stationId) {
+    // Remove any existing download row
+    const existing = document.getElementById('panel-download-row');
+    if (existing) existing.remove();
+  
+    const row = document.createElement('div');
+    row.id = 'panel-download-row';
+    row.className = 'download-row';
+    row.innerHTML = `
+      <select class="download-format" id="download-format" title="Download format">
+        <option value="csv">CSV</option>
+        <option value="json">JSON</option>
+      </select>
+      <button class="download-btn" id="download-btn" title="Download 14-day data">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M8 2 v8 M5 7 l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12 v1 a1 1 0 0 0 1 1 h10 a1 1 0 0 0 1-1 v-1" stroke-linecap="round"/>
+        </svg>
+        Download 14-Day Data
+      </button>
+    `;
+  
+    // Insert after panel-meta inside panel-header
+    document.getElementById('panel-header').appendChild(row);
+  
+    document.getElementById('download-btn').addEventListener('click', function () {
+      const format = document.getElementById('download-format').value;
+      const url    = `api/download_station.php?id=${encodeURIComponent(stationId)}&format=${format}`;
+  
+      // Trigger download via a temporary link
+      const a  = document.createElement('a');
+      a.href   = url;
+      a.download = '';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+  }
+
   // ────────────────────────────────────────────────────────────────────────────
   // STATION INFO TAB
   // ────────────────────────────────────────────────────────────────────────────
@@ -714,7 +760,7 @@ require([
   
     if (si) {
       rows += infoRow('Geologic Unit',   si.geologic_unit  || '—');
-      rows += infoRow('Soil Unit',       si.soil_unit      || '—');
+      rows += infoRow('USDA-NRCS Soil Unit',       si.soil_unit      || '—');
       rows += infoRow('Elevation',       si.elevation_m != null ? si.elevation_m + ' m' : '—');
       rows += infoRow('Slope',           si.slope_deg  != null ? si.slope_deg + '°' : '—');
       rows += infoRow('Landslide Susceptibility',  susceptibilityBadge(si.susceptibility));
