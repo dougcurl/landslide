@@ -97,7 +97,8 @@ if ($format === 'json') {
     $records = [];
     foreach ($data['history'] as $row) {
         $record = [
-            'datetime'   => $row['datetime'],
+            'date'       => substr($row['datetime'], 0, 10),
+            'time'       => substr($row['datetime'], 11, 8),
             'station_id' => $data['station_id'],
             'station'    => $data['name'],
             'region'     => $data['region'],
@@ -152,14 +153,14 @@ fputcsv($out, ['# Data is provisional — Kentucky Geological Survey']);
 fputcsv($out, ['#']);
 
 // Column header row
-$headers = ['datetime', 'station_id', 'station_name', 'region'];
+$headers = ['date', 'time', 'station_id', 'station_name', 'region'];
 foreach ($columns as $col) {
     $headers[] = type_label($col['type']) . '_' . $col['label'];
 }
 fputcsv($out, $headers);
 
 // Unit row
-$units = ['', '', '', ''];
+$units = ['', '', '', '', ''];
 foreach ($columns as $col) {
     $units[] = $col['unit'];
 }
@@ -168,7 +169,8 @@ fputcsv($out, $units);
 // Data rows — full 15-minute resolution
 foreach ($data['history'] as $row) {
     $line = [
-        $row['datetime'],
+        substr($row['datetime'], 0, 10),
+        substr($row['datetime'], 11, 8),
         $data['station_id'],
         $data['name'],
         $data['region'],

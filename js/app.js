@@ -928,6 +928,7 @@ require([
     return parseFloat(v).toFixed(1);
   }
 
+  /*
   // ─── Charts ──────────────────────────────────────────────────────────────────
   const CHART_COLORS = {
     soil_moisture:    ["#55afd4", "#4a8fc4", "#3a6fa4", "#2a4f84"],  // blues
@@ -935,7 +936,15 @@ require([
     soil_temp:        ["#e0844a", "#c4703a", "#a85c2a", "#8c481a"],  // ambers
     precipitation:    ["#5ec47f", "#4aaa6a", "#369055", "#227640"],  // greens
   };
-  const DEPTH_COLORS = ["#55afd4","#a07dd4","#e0844a","#5ec47f","#d4793a"]; // fallback
+  */
+  const DEPTH_COLORS = ["#5ec47f","#e07070","#55afd4","#d4a840","#c47fce"]; // one color scheme for all
+  //override with depth-based colors since that's more intuitive and the charts are small enough that we don't need separate schemes to differentiate them
+  const CHART_COLORS = {
+      soil_moisture:    DEPTH_COLORS,  // blues
+      matric_potential: DEPTH_COLORS,  // purples
+      soil_temp:        DEPTH_COLORS,  // ambers
+      precipitation:    DEPTH_COLORS,  // greens
+    };
 
   function renderChart(canvasId, sensorType, history, yLabel) {
     // Use plain object instead of Map for broadest compatibility
@@ -991,13 +1000,13 @@ require([
         plugins: {
           legend: {
             display: depthKeys.length > 1,
-            labels: { color: "#9ab5a3", font: { family: "DM Mono", size: 10 }, boxWidth: 12 }
+            labels: { color: "#9ab5a3", font: { family: "DM Mono", size: 12 }, boxWidth: 12 }
           },
           tooltip: {
             backgroundColor: "#151e1a", borderColor: "rgba(120,180,140,0.3)", borderWidth: 1,
             titleColor: "#e8f0eb", bodyColor: "#9ab5a3",
-            titleFont: { family: "DM Mono", size: 11 },
-            bodyFont:  { family: "DM Mono", size: 11 },
+            titleFont: { family: "DM Mono", size: 12 },
+            bodyFont:  { family: "DM Mono", size: 12 },
           }
         },
         scales: {
@@ -1005,13 +1014,13 @@ require([
             type: "time",
             time: { unit: "day", displayFormats: { day: "MMM d" } },
             grid:  { color: "rgba(120,180,140,0.07)" },
-            ticks: { color: "#b8d4c0", font: { family: "DM Mono", size: 9 }, maxRotation: 0 }
+            ticks: { color: "#b8d4c0", font: { family: "DM Mono", size: 11 }, maxRotation: 0 }
           },
           y: {
             grid:  { color: "rgba(120,180,140,0.07)" },
-            ticks: { color: "#b8d4c0", font: { family: "DM Mono", size: 9 } },
+            ticks: { color: "#b8d4c0", font: { family: "DM Mono", size: 11 } },
             title: { display: true, text: yAxisLabel, color: "#b8d4c0",
-                     font: { family: "DM Mono", size: 9 } }
+                     font: { family: "DM Mono", size: 11 } }
           }
         }
       }

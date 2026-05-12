@@ -182,25 +182,32 @@ require_once __DIR__ . '/config.php';
 <script>
   // Splash dismiss
   document.addEventListener('DOMContentLoaded', function() {
-    var overlay = document.getElementById('splash-overlay');
-    var btn     = document.getElementById('splash-close');
-    function dismiss() {
-      overlay.classList.add('splash-hiding');
-      setTimeout(function() { overlay.style.display = 'none'; }, 400);
-    }
-    btn.addEventListener('click', dismiss);
+      var overlay = document.getElementById('splash-overlay');
+      var btn     = document.getElementById('splash-close');
 
-    var reopenBtn = document.getElementById('splash-reopen');
-    reopenBtn.addEventListener('click', function() {
-      overlay.classList.remove('splash-hiding');
-      overlay.style.display = 'flex';
-    });
-    overlay.addEventListener('click', function(e) {
-      if (e.target === overlay) dismiss();
-    });
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') dismiss();
-    });
+      // Hide splash immediately if ?nosplash param is present
+      var params = new URLSearchParams(window.location.search);
+      if (params.has('nosplash')) {
+          overlay.style.display = 'none';
+      }
+
+      function dismiss() {
+        overlay.classList.add('splash-hiding');
+        setTimeout(function() { overlay.style.display = 'none'; }, 400);
+      }
+      btn.addEventListener('click', dismiss);
+
+      var reopenBtn = document.getElementById('splash-reopen');
+      reopenBtn.addEventListener('click', function() {
+        overlay.classList.remove('splash-hiding');
+        overlay.style.display = 'flex';
+      });
+      overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) dismiss();
+      });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') dismiss();
+      });
   });
 </script>
 <script src="js/app.js"></script>
@@ -212,10 +219,14 @@ require_once __DIR__ . '/config.php';
 
     <div id="splash-header">
       <div class="splash-logo-row" style="display:flex;align-items:center;gap:16px;">
-        <img src="https://kgs.uky.edu/kygeode/img/UK-KGSlogos/KGS-new/kgs-logo-final.png"
-            alt="Kentucky Geological Survey" class="splash-logo">
-        <img src="img/CLIMBSLogo.png" alt="CLIMBS" 
+        <a href="https://kygs.uky.edu" target="_blank">
+          <img src="https://kgs.uky.edu/kygeode/img/UK-KGSlogos/KGS-new/kgs-logo-final.png"
+            alt="Kentucky Geological Survey main page logo" class="splash-logo">
+         </a>
+         <a href="https://kynsfepscor.uky.edu/climbs/" target="_blank" rel="noopener" class="climbs-logo-link" title="CLIMBS main logo">
+          <img src="img/CLIMBSLogo.png" alt="CLIMBS" 
             style="height:44px;width:auto;background:white;border-radius:4px;padding:3px 8px;filter:none;">
+          </a>
       </div>
       <div class="splash-tag">Real-Time Monitoring Network</div>
       <h1 id="splash-title"><?= htmlspecialchars(SITE_NAME) ?></h1>

@@ -118,7 +118,7 @@ if ($requested_id) {
         </div>
       <?php endif; ?>
 
-      <a href="index.php#<?= htmlspecialchars($active['id']) ?>" target="_blank" rel="noopener"
+      <a href="index.php?nosplash=-1#<?= htmlspecialchars($active['id']) ?>" target="_blank" rel="noopener"
          class="map-link-btn">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
           <path d="M10 1 L6 3 L1 1 v12 l5 2 4-2 5 2 V3 L15 1"/>
@@ -230,7 +230,7 @@ if ($requested_id) {
           <p>Live Sensor Data</p>
           <p>Soil moisture updated ~every 45 minutes</p>
         </div>
-        <a href="index.php#<?= htmlspecialchars($active['id']) ?>" class="live-cta-btn" target="_blank" rel="noopener">Open Map →</a>
+        <a href="index.php?nosplash=-1#<?= htmlspecialchars($active['id']) ?>" class="live-cta-btn" target="_blank" rel="noopener">Open Map →</a>
       </div>
 
     </div>
