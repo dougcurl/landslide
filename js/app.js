@@ -835,6 +835,8 @@ require([
     const matrics   = sensors.filter(s => s.type === "matric_potential");
     const temps     = sensors.filter(s => s.type === "soil_temp");
     const precips   = sensors.filter(s => s.type === "precipitation");
+    const airtemps  = sensors.filter(s => s.type === "air_temp");
+    const humidities = sensors.filter(s => s.type === "humidity");
   
     let html = `
       <div style="padding:18px 20px;">
@@ -853,6 +855,8 @@ require([
     moistures.forEach(s => html += sensorCard(s, "sc-moisture"));
     matrics.forEach(s   => html += sensorCard(s, "sc-matric"));
     temps.forEach(s     => html += sensorCard(s, "sc-temp"));
+    airtemps.forEach(s  => html += sensorCard(s, "sc-airtemp"));
+    humidities.forEach(s => html += sensorCard(s, "sc-humidity"));
   
     // Precipitation: show 24-hr total instead of latest interval reading
     if (precips.length > 0) {
@@ -879,6 +883,8 @@ require([
       { key: "matric_potential", label: "Matric (Water) Potential (kPa)", id: "chart-matric"   },
       { key: "soil_temp",        label: "Soil Temperature (°C)",           id: "chart-temp"     },
       { key: "precipitation",    label: "Precipitation (mm)",              id: "chart-precip"   },
+      { key: "air_temp",         label: "Air Temperature (°C)",            id: "chart-airtemp"  },
+      { key: "humidity",         label: "Relative Humidity (%)",         id: "chart-humidity" },
     ];
   
     chartTypes.forEach(ct => {
@@ -918,7 +924,9 @@ require([
     return {
       soil_moisture: "Vol. Water Content", matric_potential: "Matric Potential",
       soil_temp: "Soil Temperature", precipitation: "Precipitation",
-      atmospheric_pressure: "Atm. Pressure"
+      atmospheric_pressure: "Atm. Pressure",
+      air_temp: "Air Temperature",
+      humidity: "Rel. Humidity",
     }[t] || t;
   }
 
@@ -935,6 +943,8 @@ require([
     matric_potential: ["#a07dd4", "#8a5fc4", "#7a4fb4", "#6a3fa4"],  // purples
     soil_temp:        ["#e0844a", "#c4703a", "#a85c2a", "#8c481a"],  // ambers
     precipitation:    ["#5ec47f", "#4aaa6a", "#369055", "#227640"],  // greens
+    air_temp:           ["#55afd4", "#4a8fc4", "#3a6fa4", "#2a4f84"],  // blues
+    humidity:           ["#5ec47f", "#4aaa6a", "#369055", "#227640"],  // greens
   };
   */
   const DEPTH_COLORS = ["#5ec47f","#e07070","#55afd4","#d4a840","#c47fce"]; // one color scheme for all

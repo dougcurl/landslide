@@ -268,6 +268,8 @@ function get_unit_label_v5(string $type): string {
         'soil_temp'            => '°C',
         'precipitation'        => 'mm',
         'atmospheric_pressure' => 'kPa',
+        'air_temp'             => '°C',
+        'humidity'             => '%',
         default                => '',
     };
 }

@@ -82,6 +82,8 @@ function normalize_station_data_v5(array $station, array $raw_response): array {
         'soil temperature'       => ['soil_temp',        '°C'],
         'precipitation'          => ['precipitation',    'mm'],
         'atmospheric pressure'   => ['atmospheric_pressure', 'kPa'],
+        'air temperature'        => ['air_temp',         '°C'],
+        'relative humidity'      => ['humidity',         '%'],
     ];
 
     // ── Group flat values[] by timestamp ─────────────────────────────────────

@@ -1008,6 +1008,8 @@ html, body {
 .sc-matric   .sc-value { color: var(--accent-amber); }  /* 4.5:1 ✓ */
 .sc-temp     .sc-value { color: var(--accent-blue);  }  /* 5.1:1 ✓ */
 .sc-precip   .sc-value { color: var(--accent-gold);  }  /* 5.6:1 ✓ */
+.sc-airtemp  .sc-value { color: #a0c4e8; }  /* light steel blue */
+.sc-humidity .sc-value { color: #7ecec4; }  /* teal */
 
 /* ─── Charts ─────────────────────────────────────────────────── */
 .chart-section { margin-bottom: 22px; }

@@ -67,7 +67,7 @@ foreach ($data['history'] as $row) {
 }
 
 // Sort columns: soil_moisture first, then matric_potential, soil_temp, precipitation
-$type_order = ['soil_moisture' => 0, 'matric_potential' => 1, 'soil_temp' => 2, 'precipitation' => 3];
+$type_order = ['soil_moisture' => 0, 'matric_potential' => 1, 'soil_temp' => 2, 'precipitation' => 3, 'air_temp' => 4, 'humidity' => 5];
 uasort($columns, function($a, $b) use ($type_order) {
     $ta = $type_order[$a['type']] ?? 9;
     $tb = $type_order[$b['type']] ?? 9;
@@ -83,6 +83,8 @@ function type_label(string $t): string {
         'soil_temp'            => 'SoilTemp_C',
         'precipitation'        => 'Precip_mm',
         'atmospheric_pressure' => 'AtmPressure_kPa',
+        'air_temp'             => 'AirTemp_C',
+        'humidity'             => 'RelHumidity_pct',
         default                => $t,
     };
 }
