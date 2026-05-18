@@ -215,6 +215,21 @@ function write_summary_cache(): bool {
         if (!file_exists($path)) continue;
         $d = json_decode(file_get_contents($path), true);
         if (!$d) continue;
+
+        // ── compute 24h rainfall from full history ──────────────────────────
+        $cutoff_ts    = time() - 86400;
+        $rainfall_24h = null;
+        foreach ($d['history'] ?? [] as $row) {
+            $row_ts = strtotime($row['datetime'] ?? '');
+            if (!$row_ts || $row_ts < $cutoff_ts) continue;
+            foreach ($row['sensors'] as $sensor) {
+                if ($sensor['type'] === 'precipitation' && $sensor['value'] !== null) {
+                    $rainfall_24h = ($rainfall_24h ?? 0) + $sensor['value'];
+                }
+            }
+        }
+        if ($rainfall_24h !== null) $rainfall_24h = round($rainfall_24h, 2);
+
         $summary[] = [
             'station_id'          => $d['station_id'],
             'name'                => $d['name'],
@@ -226,6 +241,7 @@ function write_summary_cache(): bool {
             'latest_moisture_avg' => $d['latest_moisture_avg'],
             'latest_moisture_pct' => $d['latest_moisture_pct'],
             'latest_sensors'      => $d['latest_sensors'],
+            'rainfall_24h_mm'     => $rainfall_24h,
         ];
     }
     return file_put_contents(

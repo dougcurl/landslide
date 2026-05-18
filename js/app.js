@@ -62,6 +62,7 @@ require([
   let timeSliderActive  = false;
   let historyData       = null;   // loaded once on first activation
   let timeSliderIndex   = null;   // null = live mode
+  let symbolizeBy = 'moisture'; // 'moisture' | 'precip'
 
   // ─── Map Setup ───────────────────────────────────────────────────────────────
   const map  = new Map({ basemap: "topo-vector" });
@@ -135,6 +136,12 @@ require([
       KY Aerial (Phase 3)
     </button>
     <div class="basemap-divider"></div>
+    <button id="btn-symbolize" class="radar-toggle" title="Switch map symbology">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+        <circle cx="7" cy="10" r="5"/><circle cx="14" cy="5" r="3" opacity=".6"/>
+      </svg>
+      <span id="symbolize-label">Moisture</span>
+    </button>
     <button class="radar-toggle" id="susceptibility-toggle" title="Toggle Landslide Susceptibility Layer">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M3 20 L8 10 L13 15 L17 7 L21 20 Z" stroke-linejoin="round"/>
@@ -202,6 +209,13 @@ require([
   document.getElementById("map-controls-toggle").addEventListener("click", function () {
     this.classList.toggle("active");
     basemapContent.classList.toggle("mobile-open");
+  });
+
+  document.getElementById('btn-symbolize').addEventListener('click', function () {
+    symbolizeBy = symbolizeBy === 'moisture' ? 'precip' : 'moisture';
+    document.getElementById('symbolize-label').textContent =
+      symbolizeBy === 'moisture' ? 'Moisture' : 'Precip 24h';
+    renderMarkers(stationsData); // re-render with new color scheme
   });
 
   // ─── Landslide Susceptibility Layer ────────────────────────────────────────────
@@ -330,6 +344,31 @@ require([
     }
   }, 5 * 60 * 1000);
 
+  // ─── Precipitation → Color ─────────────────────────────────────────────────
+  function precipToColor(mm) {
+    if (mm === null || mm === undefined) return [74, 90, 82]; // neutral gray
+    const t = Math.max(0, Math.min(1, mm / 50));              // clamp 0–50mm
+    const stops = [
+      [0.00, [200, 210, 200]],   // dry — pale gray-green
+      [0.10, [160, 195, 220]],   // trace — light blue
+      [0.30, [ 80, 150, 210]],   // moderate — sky blue
+      [0.60, [ 30,  90, 180]],   // heavy — medium blue
+      [1.00, [ 10,  40, 120]],   // extreme — deep navy
+    ];
+    for (let i = 0; i < stops.length - 1; i++) {
+      const [t0, c0] = stops[i], [t1, c1] = stops[i + 1];
+      if (t >= t0 && t <= t1) {
+        const f = (t - t0) / (t1 - t0);
+        return [
+          Math.round(c0[0] + f * (c1[0] - c0[0])),
+          Math.round(c0[1] + f * (c1[1] - c0[1])),
+          Math.round(c0[2] + f * (c1[2] - c0[2])),
+        ];
+      }
+    }
+    return [10, 40, 120];
+  }
+
   // ─── Moisture → Color ────────────────────────────────────────────────────────
   function moistureToColor(val) {
     if (val === null || val === undefined) return [74, 90, 82];
@@ -365,11 +404,9 @@ require([
   function buildMarkerSVG(station) {
     const pct    = station.latest_moisture_pct;
     const rgb    = moistureToColor(station.latest_moisture_avg);
-    const fill   = colorToHex(rgb);
     const isActive = station.station_id === activeStationId;
     const stroke  = isActive ? "#ffffff" : "rgba(0,0,0,0.45)";
     const strokeW = isActive ? 3 : 1.5;
-    const label   = pct !== null ? `${pct}%` : "N/A";
     const name    = station.name.replace(/^Station \d+ — /, "");
 
     // ── Marker geometry — change ONLY r to resize everything ──────────────
@@ -395,6 +432,22 @@ require([
     // Pill is horizontally centered on the pin, which is centered on the bubble, which is centered in the SVG — so pillX depends on svgW which depends on pillW
     const pillX   = cx - pillW / 2;
 
+    let fill, label, subLabel;
+
+    if (symbolizeBy === 'precip') {
+      const mm  = station.rainfall_24h_mm ?? null;
+      const rgb = precipToColor(mm);
+      fill      = colorToHex(rgb);
+      label     = mm !== null ? mm.toFixed(1) : 'N/A';
+      subLabel  = 'mm';
+    } else {
+      const pct = station.latest_moisture_pct;
+      const rgb = moistureToColor(station.latest_moisture_avg);
+      fill      = colorToHex(rgb);
+      label     = pct !== null ? `${pct}%` : 'N/A';
+      subLabel  = 'VWC';
+    }
+
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">
       <defs>
         <filter id="sh" x="-40%" y="-40%" width="180%" height="180%">
@@ -414,7 +467,7 @@ require([
             font-size="${fontSize}" font-weight="bold" fill="white"
             paint-order="stroke" stroke="rgba(0,0,0,0.25)" stroke-width="1">${label}</text>
       <text x="${cx}" y="${cy + fontSize * 0.72}" text-anchor="middle" font-family="'Courier New',monospace"
-            font-size="${subFontSize}" fill="rgba(255,255,255,0.8)" letter-spacing="1">VWC</text>
+            font-size="${subFontSize}" fill="rgba(255,255,255,0.8)" letter-spacing="1">${subLabel}</text>
       <!-- Name pill -->
       <rect x="${pillX}" y="${pillY - pillH/2}" width="${pillW}" height="${pillH}" rx="4"
             fill="rgba(0,0,0,0.72)" filter="url(#lsh)"/>

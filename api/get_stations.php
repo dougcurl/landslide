@@ -44,6 +44,7 @@ foreach (STATIONS as $s) {
                 'latest_moisture_avg' => $d['latest_moisture_avg'],
                 'latest_moisture_pct' => $d['latest_moisture_pct'],
                 'latest_sensors'      => $d['latest_sensors'] ?? [],
+                'rainfall_24h_mm'     => $d['rainfall_24h_mm'] ?? null,
             ];
         }
     }

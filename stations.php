@@ -45,6 +45,16 @@ if ($requested_id) {
   <link rel="stylesheet" href="css/stations.css">
 </head>
 <body>
+    <!-- GA4 updated Jan 3, 2023 - Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GHBYG6LVJQ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-GHBYG6LVJQ');
+      gtag('config', 'UA-3514165-12');
+    </script>
 
 <!-- ── Header ──────────────────────────────────────────────────────────────── -->
 <header id="site-header">
@@ -243,7 +253,9 @@ if ($requested_id) {
 
   <div class="dir-heading">
     <h2>Monitoring Station Directory</h2>
-    <p><?= count(STATIONS) ?> stations across Eastern Kentucky — click any station to view site details.</p>
+    <p><?= count(STATIONS) ?> stations across Eastern Kentucky — click any station to view site details.<br>
+    Open this <a href="https://kgs.uky.edu/slope-monitoring/sensor_specs.pdf" target="_blank" rel="noopener">PDF to view sensor specifications</a>.
+  </p>
 
     <div style="display:flex;gap:6px;margin-bottom:28px;margin-top:16px;">
       <a href="stations.php?sort=region"

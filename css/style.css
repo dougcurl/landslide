@@ -259,7 +259,7 @@ html, body {
 }
 
 /* ─── Radar Toggle Button ────────────────────────────────────── */
-.radar-toggle {
+.radar-toggle{
   display: flex;
   align-items: center;
   gap: 7px;

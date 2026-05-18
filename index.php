@@ -252,7 +252,7 @@ require_once __DIR__ . '/config.php';
           <div class="splash-card-text">
             <strong><?= count(STATIONS) ?> Monitoring Stations</strong>
             <span>Weather station and soil moisture sensors logging volumetric water content and matric potential at two depths. 
-              Values on map show the average volumetric water content for the two depths. 
+              Values on map show the average volumetric water content for the two depths. Click the "Moisture" button in the basemap switcher to toggle coloring by 24h rainfall instead.
               <a href="stations.php" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">View details for all stations.</a></span>
           </div>
         </div>
@@ -346,9 +346,26 @@ require_once __DIR__ . '/config.php';
           <span>Switch between ESRI Topo and Kentucky Aerial 3-inch imagery using the basemap control at the top of the map. The aerial layer uses a neutral gray base to fill areas outside KY coverage</span>
         </div>
       </div>
-     </div>
 
-      <div class="splash-how">
+      <div class="splash-card">
+        <div class="splash-card-icon">
+          <!-- Document/sensor icon -->
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="6" y="3" width="16" height="20" rx="2" stroke="currentColor" stroke-width="2.5"/>
+            <path d="M10 9 h8 M10 13 h8 M10 17 h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M18 21 v5 l3-1.5 3 1.5 V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+          </svg>
+        </div>
+        <div class="splash-card-text">
+          <strong>Sensor Specifications</strong>
+          <span>Network instruments include TEROS 12 soil moisture, TEROS 21 matric potential, TEROS 32 field tensiometer, and ATMOS 41 weather station sensors.
+            <a href="sensor_specs.pdf" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">Download sensor specs (PDF)</a>.
+          </span>
+        </div>
+      </div>
+    </div>
+
+     <div class="splash-how">
         <div class="splash-how-title">Reading the Map</div>
         <div class="splash-how-row">
           <div class="splash-swatch-row">
@@ -367,12 +384,11 @@ require_once __DIR__ . '/config.php';
         </div>
       </div>
 
-      
-
       <div class="splash-footer-note">
         Data refreshed approximately every 45 minutes via Zentra Cloud 2.0 API.
         NEXRAD radar shows live precipitation only and cannot be synced to the time slider.
-        Network operated by the <a href="https://kygs.uky.edu/research/landslides/" target="_blank" rel="noopener">Kentucky Geological Survey Landslides Hazards and Engineeering Team</a>, University of Kentucky.
+        Network operated by the <a href="https://kygs.uky.edu/research/landslides/" target="_blank" rel="noopener">Kentucky Geological Survey Landslides Hazards and Engineering Team</a>, University of Kentucky.
+        &nbsp;·&nbsp; <a href="sensor_specs.pdf" target="_blank" rel="noopener">Sensor Specifications (PDF)</a>
       </div>
 
     </div><!-- /splash-body -->
