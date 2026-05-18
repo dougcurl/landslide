@@ -231,7 +231,7 @@ require([
   let radarFrames      = [];
   let radarFrameIndex  = 0;
   let radarAnimTimer   = null;
-  let radarSpeed       = 500; // ms per frame
+  let radarSpeed       = 1000; // ms per frame
   const RADAR_FRAMES   = 12;  // 12 x 5min = 60 min history
 
   function buildRadarLayer(timestamp, opacity) {

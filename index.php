@@ -109,9 +109,9 @@ require_once __DIR__ . '/config.php';
     <div class="radar-sep"></div>
     <label style="font-size:10px;">Speed</label>
     <select id="radar-speed" style="background:var(--bg-card);border:1px solid var(--border-bright);color:var(--text-secondary);border-radius:3px;font-size:10px;padding:2px 4px;font-family:var(--font-mono);">
-      <option value="800">Slow</option>
-      <option value="500" selected>Normal</option>
-      <option value="250">Fast</option>
+      <option value="1500">Slow</option>
+      <option value="1000" selected>Normal</option>
+      <option value="500">Fast</option>
     </select>
   </div>
 
