@@ -214,8 +214,11 @@ require([
   document.getElementById('btn-symbolize').addEventListener('click', function () {
     symbolizeBy = symbolizeBy === 'moisture' ? 'precip' : 'moisture';
     document.getElementById('symbolize-label').textContent =
-      symbolizeBy === 'moisture' ? 'Saturation' : 'Precip 24h';
-    renderMarkers(stationsData); // re-render with new color scheme
+      symbolizeBy === 'moisture' ? 'Moisture' : 'Precip 24h';
+    const isPrecip = symbolizeBy === 'precip';
+    document.getElementById('legend-sat').style.display    = isPrecip ? 'none'  : 'flex';
+    document.getElementById('legend-precip').style.display = isPrecip ? 'flex'  : 'none';
+    renderMarkers(stationsData);
   });
 
   // ─── Landslide Susceptibility Layer ────────────────────────────────────────────

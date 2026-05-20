@@ -115,12 +115,22 @@ require_once __DIR__ . '/config.php';
     </select>
   </div>
 
-    <!-- Soil moisture legend -->
+    <!-- Legend — swaps between saturation and precip modes -->
     <div id="legend">
-      <span>Dry</span>
-      <div class="legend-bar"></div>
-      <span>Wet</span>
-      <span style="margin-left:8px;font-size:10px;">(% Saturation)</span>
+      <!-- Saturation mode (default) -->
+      <div id="legend-sat" style="display:flex;align-items:center;gap:8px;">
+        <span>Dry</span>
+        <div class="legend-bar"></div>
+        <span>Wet</span>
+        <span style="margin-left:8px;font-size:10px;">(% Saturation)</span>
+      </div>
+      <!-- Precip mode -->
+      <div id="legend-precip" style="display:none;align-items:center;gap:8px;">
+        <span>0 mm</span>
+        <div class="legend-bar-precip"></div>
+        <span>50+ mm</span>
+        <span style="margin-left:8px;font-size:10px;">(24h Precip)</span>
+      </div>
     </div>
 
     <!-- Time slider -->

@@ -633,6 +633,18 @@ html, body {
     var(--wet-3) 100%);
 }
 
+.legend-bar-precip {
+  width: 160px;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(to right,
+    #c8d2c8 0%,
+    #a0c3dc 15%,
+    #5096d2 40%,
+    #1e5ab4 70%,
+    #0a2878 100%);
+}
+
 /* ─── Time Slider Bar ────────────────────────────────────────── */
 #time-slider-bar {
   position: absolute;
