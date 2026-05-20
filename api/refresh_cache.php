@@ -164,6 +164,18 @@ function normalize_station_data_v5(array $station, array $raw_response): array {
         ? round(array_sum($moisture_vals) / count($moisture_vals), 4)
         : null;
 
+    // ── Compute saturation avg (VWC / vwc_max per port, then average) ─────────
+    $sat_vals = [];
+    foreach ($latest_vwc_by_port as $port_num => $port_data) {
+        $vwc_max = $station['ports'][$port_num]['vwc_max'] ?? null;
+        if ($vwc_max && $vwc_max > 0) {
+            $sat_vals[] = min(1.0, $port_data['value'] / $vwc_max);
+        }
+    }
+    $sat_avg = !empty($sat_vals)
+        ? round(array_sum($sat_vals) / count($sat_vals), 4)
+        : null;
+
     // latest_sensors: one entry per port per whitelisted measurement, most recent ts
     // Build by rescanning history in reverse to find latest per port+type combo
     $latest_by_key  = [];
@@ -190,8 +202,10 @@ function normalize_station_data_v5(array $station, array $raw_response): array {
         'location_label'      => $device_meta['location']    ?? '',
         'cached_at'           => date('c'),
         'latest_datetime'     => $latest_row ? $latest_row['datetime'] : null,
-        'latest_moisture_avg' => $moisture_avg,
-        'latest_moisture_pct' => $moisture_avg !== null ? round($moisture_avg * 100, 1) : null,
+        'latest_moisture_avg'    => $moisture_avg,
+        'latest_moisture_pct'    => $moisture_avg !== null ? round($moisture_avg * 100, 1) : null,
+        'latest_saturation_avg'  => $sat_avg,
+        'latest_saturation_pct'  => $sat_avg !== null ? round($sat_avg * 100, 1) : null,
         'latest_sensors'      => $latest_sensors,
         'port_config'         => $station['ports'],
         'history'             => $history,
@@ -238,8 +252,10 @@ function write_summary_cache(): bool {
             'region'              => $d['region'],
             'location_label'      => $d['location_label'] ?? '',
             'latest_datetime'     => $d['latest_datetime'],
-            'latest_moisture_avg' => $d['latest_moisture_avg'],
-            'latest_moisture_pct' => $d['latest_moisture_pct'],
+            'latest_moisture_avg'   => $d['latest_moisture_avg'],
+            'latest_moisture_pct'   => $d['latest_moisture_pct'],
+            'latest_saturation_avg' => $d['latest_saturation_avg'] ?? null,
+            'latest_saturation_pct' => $d['latest_saturation_pct'] ?? null,
             'latest_sensors'      => $d['latest_sensors'],
             'rainfall_24h_mm'     => $rainfall_24h,
         ];

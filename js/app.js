@@ -369,7 +369,7 @@ require([
     return [10, 40, 120];
   }
 
-  // ─── Moisture → Color ────────────────────────────────────────────────────────
+  // ─── Moisture → Color - don't use now - but keeping just in case ────────────────────────────────────────────────────────
   function moistureToColor(val) {
     if (val === null || val === undefined) return [74, 90, 82];
     const t = Math.max(0, Math.min(1, (val - 0.05) / 0.45));
@@ -394,6 +394,33 @@ require([
       }
     }
     return [93, 186, 125];
+  }
+
+    // ─── Saturation → Color ──────────────────────────────────────────────────────
+  function saturationToColor(sat) {
+    if (sat === null || sat === undefined) return [74, 90, 82];
+    const t = Math.max(0, Math.min(1, sat));
+    const stops = [
+      [0.00, [107, 58,  42]],   //   0% — bone dry
+      [0.30, [155, 90,  42]],   //  30%
+      [0.50, [196,129,  60]],   //  50%
+      [0.65, [201,168,  76]],   //  65% — dry/wet transition
+      [0.80, [138,181, 110]],   //  80%
+      [0.90, [ 93,186, 125]],   //  90%
+      [1.00, [ 42,122,  82]],   // 100% — fully saturated
+    ];
+    for (let i = 0; i < stops.length - 1; i++) {
+      const [t0, c0] = stops[i], [t1, c1] = stops[i + 1];
+      if (t >= t0 && t <= t1) {
+        const f = (t - t0) / (t1 - t0);
+        return [
+          Math.round(c0[0] + f * (c1[0] - c0[0])),
+          Math.round(c0[1] + f * (c1[1] - c0[1])),
+          Math.round(c0[2] + f * (c1[2] - c0[2])),
+        ];
+      }
+    }
+    return [42, 122, 82];
   }
 
   function colorToHex([r, g, b]) {
@@ -441,11 +468,19 @@ require([
       label     = mm !== null ? mm.toFixed(1) : 'N/A';
       subLabel  = 'mm';
     } else {
+      /*VWC - not using anymore*
       const pct = station.latest_moisture_pct;
       const rgb = moistureToColor(station.latest_moisture_avg);
       fill      = colorToHex(rgb);
       label     = pct !== null ? `${pct}%` : 'N/A';
       subLabel  = 'VWC';
+      */
+      
+      const pct = station.latest_saturation_pct;
+      const rgb = saturationToColor(station.latest_saturation_avg);
+      fill      = colorToHex(rgb);
+      label     = pct !== null ? `${pct}%` : 'N/A';
+      subLabel  = 'SAT';
     }
 
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">
@@ -628,11 +663,11 @@ require([
       if (best !== null) moistureAt[s.station_id] = best;
     });
 
-    // Re-render markers with historical moisture values
+    // Re-render markers with historical saturation values
     const historicalStations = stationsData.map(st => ({
       ...st,
-      latest_moisture_avg: moistureAt[st.station_id] ?? null,
-      latest_moisture_pct: moistureAt[st.station_id] != null
+      latest_saturation_avg: moistureAt[st.station_id] ?? null,
+      latest_saturation_pct: moistureAt[st.station_id] != null
         ? Math.round(moistureAt[st.station_id] * 1000) / 10
         : null,
     }));

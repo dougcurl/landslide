@@ -18,21 +18,41 @@ foreach (STATIONS as $s) {
     $d = json_decode(file_get_contents($path), true);
     if (!$d || empty($d['history'])) continue;
 
-    // Build a compact timeseries: [ [timestamp, moisture_avg], ... ]
-    // Sample every 4th row (hourly) to keep payload small
+    // Build per-port vwc_max lookup from station config
+    $station_cfg = null;
+    foreach (STATIONS as $sc) {
+        if ($sc['id'] === $d['station_id']) { $station_cfg = $sc; break; }
+    }
+    $port_maxes = [];
+    if ($station_cfg) {
+        foreach ($station_cfg['ports'] as $port_num => $pcfg) {
+            if (!empty($pcfg['vwc_max']) && $pcfg['vwc_max'] > 0) {
+                $port_maxes[$port_num] = $pcfg['vwc_max'];
+            }
+        }
+    }
+
+    // Build compact saturation timeseries: [ [timestamp, sat_avg], ... ]
+    // Only include every 4th record to reduce payload size (adjust as needed).
     $series = [];
     $history = $d['history'];
     foreach ($history as $i => $row) {
         if ($i % 4 !== 0) continue;
 
-        // Compute average VWC across all soil_moisture sensors in this row
-        $vals = array_column(
-            array_filter($row['sensors'], fn($s) => $s['type'] === 'soil_moisture'),
-            'value'
-        );
-        $avg = !empty($vals) ? round(array_sum($vals) / count($vals), 4) : null;
-        if ($avg !== null) {
-            $series[] = [strtotime($row['datetime']), $avg];
+        $sat_vals = [];
+        foreach ($row['sensors'] as $s) {
+            if ($s['type'] !== 'soil_moisture') continue;
+            $port = $s['port'];
+            if (isset($port_maxes[$port]) && $s['value'] !== null) {
+                $sat_vals[] = min(1.0, $s['value'] / $port_maxes[$port]);
+            }
+        }
+        $sat_avg = !empty($sat_vals)
+            ? round(array_sum($sat_vals) / count($sat_vals), 4)
+            : null;
+
+        if ($sat_avg !== null) {
+            $series[] = [strtotime($row['datetime']), $sat_avg];
         }
     }
 
