@@ -214,7 +214,7 @@ require([
   document.getElementById('btn-symbolize').addEventListener('click', function () {
     symbolizeBy = symbolizeBy === 'moisture' ? 'precip' : 'moisture';
     document.getElementById('symbolize-label').textContent =
-      symbolizeBy === 'moisture' ? 'Moisture' : 'Precip 24h';
+      symbolizeBy === 'moisture' ? 'Saturation' : 'Precip 24h';
     const isPrecip = symbolizeBy === 'precip';
     document.getElementById('legend-sat').style.display    = isPrecip ? 'none'  : 'flex';
     document.getElementById('legend-precip').style.display = isPrecip ? 'flex'  : 'none';
