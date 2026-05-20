@@ -165,13 +165,21 @@ function normalize_station_data_v5(array $station, array $raw_response): array {
         : null;
 
     // ── Compute saturation avg (VWC / vwc_max per port, then average) ─────────
+    // Build a port-number-keyed lookup first (ports array is 0-indexed, not port-keyed)
+    $port_max_map = [];
+    foreach ($station['ports'] as $p) {
+        if (isset($p['vwc_max'])) {
+            $port_max_map[(int)$p['port']] = $p['vwc_max'];
+        }
+    }
     $sat_vals = [];
     foreach ($latest_vwc_by_port as $port_num => $port_data) {
-        $vwc_max = $station['ports'][$port_num]['vwc_max'] ?? null;
+        $vwc_max = $port_max_map[$port_num] ?? null;
         if ($vwc_max && $vwc_max > 0) {
             $sat_vals[] = min(1.0, $port_data['value'] / $vwc_max);
         }
     }
+    
     $sat_avg = !empty($sat_vals)
         ? round(array_sum($sat_vals) / count($sat_vals), 4)
         : null;

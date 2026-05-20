@@ -140,7 +140,7 @@ require([
       <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
         <circle cx="7" cy="10" r="5"/><circle cx="14" cy="5" r="3" opacity=".6"/>
       </svg>
-      <span id="symbolize-label">Moisture</span>
+      <span id="symbolize-label">Saturation</span>
     </button>
     <button class="radar-toggle" id="susceptibility-toggle" title="Toggle Landslide Susceptibility Layer">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -168,13 +168,13 @@ require([
       </svg>
       Auto-refresh
     </button>
-    <button class="basemap-btn" id="timeslider-toggle" title="View historical soil moisture">
+    <button class="basemap-btn" id="timeslider-toggle" title="View historical soil saturation">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"/>
         <polyline points="12,6 12,12 9,15"/>
         <path d="M16.5 4.5 L19 2 M19 2 v4 M19 2 h-4" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      Soil Moisture Time Slider
+      Soil Saturation Time Slider
     </button>
   `;
 
@@ -214,7 +214,7 @@ require([
   document.getElementById('btn-symbolize').addEventListener('click', function () {
     symbolizeBy = symbolizeBy === 'moisture' ? 'precip' : 'moisture';
     document.getElementById('symbolize-label').textContent =
-      symbolizeBy === 'moisture' ? 'Moisture' : 'Precip 24h';
+      symbolizeBy === 'moisture' ? 'Saturation' : 'Precip 24h';
     renderMarkers(stationsData); // re-render with new color scheme
   });
 
@@ -463,23 +463,14 @@ require([
 
     if (symbolizeBy === 'precip') {
       const mm  = station.rainfall_24h_mm ?? null;
-      const rgb = precipToColor(mm);
-      fill      = colorToHex(rgb);
+      fill      = colorToHex(precipToColor(mm));
       label     = mm !== null ? mm.toFixed(1) : 'N/A';
       subLabel  = 'mm';
     } else {
-      /*VWC - not using anymore*
-      const pct = station.latest_moisture_pct;
-      const rgb = moistureToColor(station.latest_moisture_avg);
-      fill      = colorToHex(rgb);
-      label     = pct !== null ? `${pct}%` : 'N/A';
-      subLabel  = 'VWC';
-      */
-      
-      const pct = station.latest_saturation_pct;
-      const rgb = saturationToColor(station.latest_saturation_avg);
-      fill      = colorToHex(rgb);
-      label     = pct !== null ? `${pct}%` : 'N/A';
+      const sat    = station.latest_saturation_avg ?? null;
+      const satPct = station.latest_saturation_pct ?? null;
+      fill      = colorToHex(saturationToColor(sat));
+      label     = satPct !== null ? `${satPct}%` : 'N/A';
       subLabel  = 'SAT';
     }
 
@@ -848,6 +839,13 @@ require([
       rows += infoRow('Elevation',       si.elevation_m != null ? si.elevation_m + ' m' : '—');
       rows += infoRow('Slope',           si.slope_deg  != null ? si.slope_deg + '°' : '—');
       rows += infoRow('Landslide Susceptibility',  susceptibilityBadge(si.susceptibility));
+      // Saturation with color badge
+      const satPct = data.latest_saturation_pct ?? null;
+      rows += infoRow('Latest Avg Saturation',
+        satPct !== null
+          ? `<span style="color:${colorToHex(saturationToColor(satPct / 100))};font-weight:600;">${satPct}%</span>`
+          : '—'
+      );
       rows += infoRow('Sensor Depths',   si.sensor_depths  || '—');
       rows += infoRow('Installed',       si.date_installed || '—');
       rows += infoRow('Collaborator',    si.collaborator   || '—');    
@@ -859,6 +857,8 @@ require([
         `<span class="coords-text">${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}</span>`);
     }
   
+    rows += infoRow('Station ID', `<span class="coords-text">${escHtml(data.station_id)}</span>`);
+
     // Station ID
     rows += infoRow('Station ID', `<span class="coords-text">${escHtml(data.station_id)}</span>`);
   
@@ -962,6 +962,19 @@ require([
         precips.forEach(s => html += sensorCard(s, "sc-precip"));
       }
     }
+
+    // Avg Saturation card — always shown alongside precip
+    const satPct = data.latest_saturation_pct ?? null;
+    const satAvg = data.latest_saturation_avg ?? null;
+    html += `
+      <div class="sensor-card sc-moisture">
+        <div class="sc-type">Avg Saturation</div>
+        <div class="sc-value" style="color:${satPct !== null ? colorToHex(saturationToColor(satAvg)) : 'var(--text-muted)'}">
+          ${satPct !== null ? satPct : '—'}
+        </div>
+        <div class="sc-unit">${satPct !== null ? '%' : ''}</div>
+        <div class="sc-label">Avg across all depths</div>
+      </div>`;
   
     html += `</div>`;  // close latest-grid
   

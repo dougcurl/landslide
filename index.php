@@ -120,7 +120,7 @@ require_once __DIR__ . '/config.php';
       <span>Dry</span>
       <div class="legend-bar"></div>
       <span>Wet</span>
-      <span style="margin-left:8px;font-size:10px;">(m³/m³ VWC)</span>
+      <span style="margin-left:8px;font-size:10px;">(% Saturation)</span>
     </div>
 
     <!-- Time slider -->
@@ -130,7 +130,7 @@ require_once __DIR__ . '/config.php';
           <circle cx="8" cy="8" r="6"/>
           <polyline points="8,4 8,8 6,10"/>
         </svg>
-        14-Day History (Soil Moisture Only)
+        14-Day History (Saturation Only)
       </span>
       <input type="range" id="time-slider-input" min="0" max="100" value="100" aria-label="time slider">
       <span id="time-slider-status">Loading…</span>
@@ -238,24 +238,25 @@ require_once __DIR__ . '/config.php';
     </div>
 
     <div id="splash-body">
+      <div class="splash-card" style="margin-bottom:12px;">
+        <div class="splash-card-icon">
+          <!-- Soil layers icon -->
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4" y="6"  width="24" height="6" rx="2" fill="currentColor" opacity="0.9"/>
+            <rect x="4" y="14" width="24" height="6" rx="2" fill="currentColor" opacity="0.6"/>
+            <rect x="4" y="22" width="24" height="4" rx="2" fill="currentColor" opacity="0.35"/>
+          </svg>
+        </div>
+        <div class="splash-card-text">
+          <strong><?= count(STATIONS) ?> Monitoring Stations</strong>
+          <span>Weather station and soil moisture sensors logging volumetric water content and matric potential at two depths. 
+            Values on map show the average soil saturation across all depths at that station — the ratio of current soil moisture to the maximum recorded value at each sensor.
+            Click the "Saturation" button in the basemap switcher to toggle coloring by 24h rainfall instead.
+            <a href="stations.php" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">View details for all stations.</a></span>
+        </div>
+      </div>
 
       <div class="splash-grid">
-        <div class="splash-card">
-          <div class="splash-card-icon">
-            <!-- Soil layers icon -->
-            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="4" y="6"  width="24" height="6" rx="2" fill="currentColor" opacity="0.9"/>
-              <rect x="4" y="14" width="24" height="6" rx="2" fill="currentColor" opacity="0.6"/>
-              <rect x="4" y="22" width="24" height="4" rx="2" fill="currentColor" opacity="0.35"/>
-            </svg>
-          </div>
-          <div class="splash-card-text">
-            <strong><?= count(STATIONS) ?> Monitoring Stations</strong>
-            <span>Weather station and soil moisture sensors logging volumetric water content and matric potential at two depths. 
-              Values on map show the average volumetric water content for the two depths. Click the "Moisture" button in the basemap switcher to toggle coloring by 24h rainfall instead.
-              <a href="stations.php" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">View details for all stations.</a></span>
-          </div>
-        </div>
 
         <div class="splash-card">
           <div class="splash-card-icon">
@@ -346,22 +347,22 @@ require_once __DIR__ . '/config.php';
           <span>Switch between ESRI Topo and Kentucky Aerial 3-inch imagery using the basemap control at the top of the map. The aerial layer uses a neutral gray base to fill areas outside KY coverage</span>
         </div>
       </div>
+    </div>
 
-      <div class="splash-card">
-        <div class="splash-card-icon">
-          <!-- Document/sensor icon -->
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="6" y="3" width="16" height="20" rx="2" stroke="currentColor" stroke-width="2.5"/>
-            <path d="M10 9 h8 M10 13 h8 M10 17 h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            <path d="M18 21 v5 l3-1.5 3 1.5 V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
-          </svg>
-        </div>
-        <div class="splash-card-text">
-          <strong>Sensor Specifications</strong>
-          <span>Network instruments include TEROS 12 soil moisture, TEROS 21 matric potential, TEROS 32 field tensiometer, and ATMOS 41 weather station sensors.
-            <a href="sensor_specs.pdf" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">Download sensor specs (PDF)</a>.
-          </span>
-        </div>
+    <div class="splash-card" style="margin-bottom:12px;">
+      <div class="splash-card-icon">
+        <!-- Document/sensor icon -->
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="3" width="16" height="20" rx="2" stroke="currentColor" stroke-width="2.5"/>
+          <path d="M10 9 h8 M10 13 h8 M10 17 h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M18 21 v5 l3-1.5 3 1.5 V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+        </svg>
+      </div>
+      <div class="splash-card-text">
+        <strong>Sensor Specifications</strong>
+        <span>Network instruments include TEROS 12 soil moisture, TEROS 21 matric potential, TEROS 32 field tensiometer, and ATMOS 41 weather station sensors.
+          <a href="sensor_specs.pdf" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">Download sensor specs (PDF)</a>.
+        </span>
       </div>
     </div>
 
@@ -380,7 +381,7 @@ require_once __DIR__ . '/config.php';
             <span>Dry</span>
             <span style="margin-left:auto">Wet</span>
           </div>
-          <p>Bubble color reflects the average volumetric water content (VWC, m³/m³) across all soil depths at that station. The percentage shown is VWC × 100.</p>
+          <p>Bubble color reflects average soil saturation across all depths at that station — the ratio of current soil moisture to the maximum recorded value at each sensor. 100% means the soil is as wet as it has been observed; values above ~65% indicate conditions favorable for landslide initiation. Raw volumetric water content (VWC, m³/m³) is available in the station detail panel.</p>
         </div>
       </div>
 

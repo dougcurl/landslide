@@ -34,17 +34,19 @@ foreach (STATIONS as $s) {
         $d = json_decode(file_get_contents($sfile), true);
         if ($d && !empty($d['station_id'])) {
             $cached[$d['station_id']] = [
-                'station_id'          => $d['station_id'],
-                'name'                => $d['name'],
-                'lat'                 => $d['lat'],
-                'lng'                 => $d['lng'],
-                'region'              => $d['region'],
-                'location_label'      => $d['location_label'] ?? '',
-                'latest_datetime'     => $d['latest_datetime'],
-                'latest_moisture_avg' => $d['latest_moisture_avg'],
-                'latest_moisture_pct' => $d['latest_moisture_pct'],
-                'latest_sensors'      => $d['latest_sensors'] ?? [],
-                'rainfall_24h_mm'     => $d['rainfall_24h_mm'] ?? null,
+                'station_id'            => $d['station_id'],
+                'name'                  => $d['name'],
+                'lat'                   => $d['lat'],
+                'lng'                   => $d['lng'],
+                'region'                => $d['region'],
+                'location_label'        => $d['location_label'] ?? '',
+                'latest_datetime'       => $d['latest_datetime'],
+                'latest_moisture_avg'   => $d['latest_moisture_avg'],
+                'latest_moisture_pct'   => $d['latest_moisture_pct'],
+                'latest_saturation_avg' => $d['latest_saturation_avg'] ?? null,
+                'latest_saturation_pct' => $d['latest_saturation_pct'] ?? null,
+                'latest_sensors'        => $d['latest_sensors'] ?? [],
+                'rainfall_24h_mm'       => $d['rainfall_24h_mm'] ?? null,
             ];
         }
     }
@@ -77,6 +79,8 @@ foreach (STATIONS as $s) {
             'latest_datetime'     => null,
             'latest_moisture_avg' => null,
             'latest_moisture_pct' => null,
+            'latest_saturation_avg' => null,
+            'latest_saturation_pct' => null,
             'latest_sensors'      => [],
         ];
     }

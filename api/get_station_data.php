@@ -112,6 +112,8 @@ echo json_encode([
     'latest_datetime'     => $data['latest_datetime'],
     'latest_moisture_avg' => $data['latest_moisture_avg'],
     'latest_moisture_pct' => $data['latest_moisture_pct'],
+    'latest_saturation_avg' => $data['latest_saturation_avg'] ?? null,
+    'latest_saturation_pct' => $data['latest_saturation_pct'] ?? null,    
     'latest_sensors'      => $data['latest_sensors'] ?? [],
     'history'             => $sampled,
     'cache_age_seconds'   => $cache_age,
