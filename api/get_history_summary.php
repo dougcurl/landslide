@@ -31,6 +31,11 @@ foreach (STATIONS as $station_cfg) {                          // ← renamed $s 
     $history = $d['history'];
     $n       = count($history);
 
+// DEBUG: dump first row's sensors
+if ($d['station_id'] === 'z6-29290') {
+    error_log(json_encode($history[0]['sensors'] ?? 'NO SENSORS KEY'));
+}
+
     for ($i = 0; $i < $n; $i += 4) {
         // Saturation from the anchor row
         $anchor     = $history[$i];

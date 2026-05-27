@@ -645,17 +645,23 @@ function renderAtIndex(idx) {
       dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " +
       dt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 
-    // Build lookup: station_id => {sat, precip} at nearest timestamp
     const dataAt = {};
     historyData.forEach(s => {
       let bestSat = null, bestPrecip = null, bestDiff = Infinity;
-      s.series.forEach(([t, sat, precip]) => {
+      let bestIdx = 0;
+      s.series.forEach(([t, sat, precip], idx) => {
         const diff = Math.abs(t - ts);
-        if (diff < bestDiff) { bestDiff = diff; bestSat = sat; bestPrecip = precip; }
+        if (diff < bestDiff) { bestDiff = diff; bestSat = sat; bestIdx = idx; }
       });
-      dataAt[s.station_id] = { sat: bestSat, precip: bestPrecip };
+      // Sum precip over a ~4-point (1-hour) window centered on best match
+      let precipWindow = 0, hasP = false;
+      for (let i = Math.max(0, bestIdx - 2); i <= Math.min(s.series.length - 1, bestIdx + 1); i++) {
+        const p = s.series[i][2];
+        if (p !== null) { precipWindow += p; hasP = true; }
+      }
+      dataAt[s.station_id] = { sat: bestSat, precip: hasP ? Math.round(precipWindow * 100) / 100 : null };
     });
-
+    
     // Re-render with historical values for whichever mode is active
     const historicalStations = stationsData.map(st => {
       const m = dataAt[st.station_id] ?? { sat: null, precip: null };
@@ -667,7 +673,7 @@ function renderAtIndex(idx) {
       };
     });
     document.getElementById('ts-mode-label').textContent =
-      isPrecip ? 'Precipitation' : 'Soil Saturation';
+      symbolizeBy === 'precip' ? 'Precipitation' : 'Soil Saturation';
     renderMarkers(historicalStations);
   }
 
