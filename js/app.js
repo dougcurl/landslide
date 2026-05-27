@@ -174,7 +174,7 @@ require([
         <polyline points="12,6 12,12 9,15"/>
         <path d="M16.5 4.5 L19 2 M19 2 v4 M19 2 h-4" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      Soil Saturation Time Slider
+      <span id="timeslider-label">Soil Saturation Time Slider</span>
     </button>
   `;
 
@@ -218,6 +218,11 @@ require([
     const isPrecip = symbolizeBy === 'precip';
     document.getElementById('legend-sat').style.display    = isPrecip ? 'none'  : 'flex';
     document.getElementById('legend-precip').style.display = isPrecip ? 'flex'  : 'none';
+    // Update time slider labels to match current mode
+    document.getElementById('ts-mode-label').textContent =
+      isPrecip ? 'Precipitation' : 'Soil Saturation';
+    document.getElementById('timeslider-label').textContent =
+      isPrecip ? ' Precipitation Time Slider' : ' Soil Saturation Time Slider';
     renderMarkers(stationsData);
   });
 
@@ -645,35 +650,38 @@ function renderAtIndex(idx) {
       dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " +
       dt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 
+    document.getElementById('ts-mode-label').textContent =
+      symbolizeBy === 'precip' ? 'Precipitation' : 'Soil Saturation';
+
     const dataAt = {};
     historyData.forEach(s => {
-      let bestSat = null, bestPrecip = null, bestDiff = Infinity;
-      let bestIdx = 0;
-      s.series.forEach(([t, sat, precip], idx) => {
+      let bestSat = null, bestDiff = Infinity, bestIdx = 0;
+      s.series.forEach(([t, sat], idx) => {
         const diff = Math.abs(t - ts);
         if (diff < bestDiff) { bestDiff = diff; bestSat = sat; bestIdx = idx; }
       });
-      // Sum precip over a ~4-point (1-hour) window centered on best match
+      // Rolling ~1hr precip window around the best-match point
       let precipWindow = 0, hasP = false;
-      for (let i = Math.max(0, bestIdx - 2); i <= Math.min(s.series.length - 1, bestIdx + 1); i++) {
+      for (let i = Math.max(0, bestIdx - 2); i <= Math.min(s.series.length - 1, bestIdx + 2); i++) {
         const p = s.series[i][2];
         if (p !== null) { precipWindow += p; hasP = true; }
       }
-      dataAt[s.station_id] = { sat: bestSat, precip: hasP ? Math.round(precipWindow * 100) / 100 : null };
+      dataAt[s.station_id] = {
+        sat:    bestSat,
+        precip: hasP ? Math.round(precipWindow * 100) / 100 : null,
+      };
     });
-    
-    // Re-render with historical values for whichever mode is active
+
     const historicalStations = stationsData.map(st => {
       const m = dataAt[st.station_id] ?? { sat: null, precip: null };
       return {
         ...st,
         latest_saturation_avg: m.sat,
         latest_saturation_pct: m.sat != null ? Math.round(m.sat * 1000) / 10 : null,
-        rainfall_24h_mm:       m.precip,
+        // Only override rainfall in precip mode; keep live 24h total in sat mode
+        ...(symbolizeBy === 'precip' ? { rainfall_24h_mm: m.precip } : {}),
       };
     });
-    document.getElementById('ts-mode-label').textContent =
-      symbolizeBy === 'precip' ? 'Precipitation' : 'Soil Saturation';
     renderMarkers(historicalStations);
   }
 
