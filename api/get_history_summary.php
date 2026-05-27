@@ -18,8 +18,9 @@ foreach (STATIONS as $station_cfg) {
     if (!$d || empty($d['history'])) continue;
 
     $port_maxes = [];
-    foreach ($d['port_config'] ?? [] as $port_num => $pcfg) {
-        if (!empty($pcfg['vwc_max']) && $pcfg['vwc_max'] > 0) {
+    foreach ($d['port_config'] ?? [] as $pcfg) {
+        $port_num = (int)($pcfg['port'] ?? -1);
+        if ($port_num >= 0 && !empty($pcfg['vwc_max']) && $pcfg['vwc_max'] > 0) {
             $port_maxes[$port_num] = $pcfg['vwc_max'];
         }
     }

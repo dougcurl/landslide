@@ -214,16 +214,22 @@ require([
   document.getElementById('btn-symbolize').addEventListener('click', function () {
     symbolizeBy = symbolizeBy === 'moisture' ? 'precip' : 'moisture';
     document.getElementById('symbolize-label').textContent =
-      symbolizeBy === 'moisture' ? 'Saturation' : 'Precip 24h';
+      symbolizeBy === 'moisture' ? 'Saturation' : '24H Precipitation';
     const isPrecip = symbolizeBy === 'precip';
     document.getElementById('legend-sat').style.display    = isPrecip ? 'none'  : 'flex';
     document.getElementById('legend-precip').style.display = isPrecip ? 'flex'  : 'none';
-    // Update time slider labels to match current mode
     document.getElementById('ts-mode-label').textContent =
-      isPrecip ? 'Precipitation' : 'Soil Saturation';
+      isPrecip ? '24H Precipitation' : 'Soil Saturation';
     document.getElementById('timeslider-label').textContent =
-      isPrecip ? ' Precipitation Time Slider' : ' Soil Saturation Time Slider';
-    renderMarkers(stationsData);
+      isPrecip ? ' 24H Precipitation Time Slider' : ' Soil Saturation Time Slider';
+
+    // If time slider is active, re-render at current position; otherwise use live data
+    if (timeSliderActive && window._tsTimestamps) {
+      const idx = parseInt(document.getElementById('time-slider-input').value);
+      renderAtIndex(idx);
+    } else {
+      renderMarkers(stationsData);
+    }
   });
 
   // ─── Landslide Susceptibility Layer ────────────────────────────────────────────
@@ -656,19 +662,22 @@ function renderAtIndex(idx) {
     const dataAt = {};
     historyData.forEach(s => {
       let bestSat = null, bestDiff = Infinity, bestIdx = 0;
-      s.series.forEach(([t, sat], idx) => {
+      s.series.forEach(([t, sat], i) => {
         const diff = Math.abs(t - ts);
-        if (diff < bestDiff) { bestDiff = diff; bestSat = sat; bestIdx = idx; }
+        if (diff < bestDiff) { bestDiff = diff; bestSat = sat; bestIdx = i; }
       });
-      // Rolling ~1hr precip window around the best-match point
-      let precipWindow = 0, hasP = false;
-      for (let i = Math.max(0, bestIdx - 2); i <= Math.min(s.series.length - 1, bestIdx + 2); i++) {
-        const p = s.series[i][2];
-        if (p !== null) { precipWindow += p; hasP = true; }
+
+      // Rolling 24h precip: sum all points where timestamp is within 86400s before ts
+      let precip24h = 0, hasP = false;
+      for (let i = bestIdx; i >= 0; i--) {
+        const [t, , p] = s.series[i];
+        if (ts - t > 86400) break;
+        if (p !== null) { precip24h += p; hasP = true; }
       }
+
       dataAt[s.station_id] = {
         sat:    bestSat,
-        precip: hasP ? Math.round(precipWindow * 100) / 100 : null,
+        precip: hasP ? Math.round(precip24h * 100) / 100 : null,
       };
     });
 

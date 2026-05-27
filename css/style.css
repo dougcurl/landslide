@@ -379,8 +379,8 @@ html, body {
 /* ─── Radar Opacity Slider ───────────────────────────────────── */
 #radar-controls {
   position: absolute;
-  bottom: 36px;
-  left: 16px;
+  bottom: 125px;
+  left: 32px;
   background: var(--bg-panel);
   border: 1px solid var(--border-bright);
   border-radius: var(--radius);

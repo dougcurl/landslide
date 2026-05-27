@@ -294,7 +294,8 @@ require_once __DIR__ . '/config.php';
           </div>
           <div class="splash-card-text">
             <strong>14-Day History</strong>
-            <span>Click any station bubble to view weather and sensor readings for the most recent two-week period.</span>
+            <span>Click any station bubble to view sensor readings for the most recent two-week period. 
+              The time slider allows you to step back through the 14-day soil saturation or 24-hour precipitation history.</span>
           </div>
         </div>
 
@@ -339,7 +340,8 @@ require_once __DIR__ . '/config.php';
         </div>
         <div class="splash-card-text">
           <strong>Time Slider</strong>
-          <span>Step back through up to 14 days of soil moisture history (radar data does not go back in time) using the Time Slider control. Drag left to travel back in time — marker colors update to reflect conditions at that time. Drag fully right to return to live data</span>
+          <span>Step back through up to 14 days of soil saturation or 24-hour precipitation history (radar data does not go back in time) using the Time Slider control. 
+            Drag left to travel back in time — marker colors update to reflect conditions at that time. Drag fully right to return to live data</span>
         </div>
       </div>
 
