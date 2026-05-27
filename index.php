@@ -84,68 +84,107 @@ require_once __DIR__ . '/config.php';
       </svg>
     </button>
 
-    <!-- Radar opacity control -->
-  <div id="radar-controls">
-    <label for="radar-opacity">Opacity</label>
-    <input type="range" id="radar-opacity" min="0.1" max="1" step="0.05" value="0.7">
-    <div class="radar-sep"></div>
-    <button id="radar-prev" title="Previous frame">
-      <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
-        <polygon points="13,2 3,8 13,14"/>
-      </svg>
-    </button>
-    <button id="radar-play" title="Play/Pause">
-      <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
-        <rect x="3" y="2" width="4" height="12"/>
-        <rect x="9" y="2" width="4" height="12"/>
-      </svg>
-    </button>
-    <button id="radar-next" title="Next frame">
-      <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
-        <polygon points="3,2 13,8 3,14"/>
-      </svg>
-    </button>
-    <span id="radar-time" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);min-width:70px;text-align:center;"></span>
-    <div class="radar-sep"></div>
-    <label style="font-size:10px;">Speed</label>
-    <select id="radar-speed" style="background:var(--bg-card);border:1px solid var(--border-bright);color:var(--text-secondary);border-radius:3px;font-size:10px;padding:2px 4px;font-family:var(--font-mono);">
-      <option value="1500">Slow</option>
-      <option value="1000" selected>Normal</option>
-      <option value="500">Fast</option>
-    </select>
-  </div>
-
-    <!-- Legend — swaps between saturation and precip modes -->
-    <div id="legend">
-      <!-- Saturation mode (default) -->
-      <div id="legend-sat" style="display:flex;align-items:center;gap:8px;">
-        <span>Dry</span>
-        <div class="legend-bar"></div>
-        <span>Wet</span>
-        <span style="margin-left:8px;font-size:10px;">(% Saturation)</span>
+    <!-- ── Unified Map Legend Panel ─────────────────────────────── -->
+    <div id="map-legend-panel">
+      <!-- Always-visible header: color bar + collapse toggle -->
+      <div id="legend-header">
+        <div id="legend-bar-row">
+          <div id="legend-sat" style="display:flex;align-items:center;gap:8px;">
+            <span class="legend-label">Dry</span>
+            <div class="legend-bar"></div>
+            <span class="legend-label">Wet</span>
+            <span class="legend-unit">(% Saturation)</span>
+          </div>
+          <div id="legend-precip" style="display:none;align-items:center;gap:8px;">
+            <span class="legend-label">0 mm</span>
+            <div class="legend-bar-precip"></div>
+            <span class="legend-label">50+ mm</span>
+            <span class="legend-unit">(24h Precip)</span>
+          </div>
+        </div>
+        <button id="legend-collapse-btn" title="Toggle legend panel" aria-expanded="false">
+          <svg id="legend-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+            <polyline points="4,10 8,6 12,10"/>
+          </svg>
+        </button>
       </div>
-      <!-- Precip mode -->
-      <div id="legend-precip" style="display:none;align-items:center;gap:8px;">
-        <span>0 mm</span>
-        <div class="legend-bar-precip"></div>
-        <span>50+ mm</span>
-        <span style="margin-left:8px;font-size:10px;">(24h Precip)</span>
-      </div>
-    </div>
 
-    <!-- Time slider -->
-    <div id="time-slider-bar">
-      <span class="ts-label">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13">
-          <circle cx="8" cy="8" r="6"/>
-          <polyline points="8,4 8,8 6,10"/>
-        </svg>
-        14-Day History (<span id="ts-mode-label">Soil Saturation</span>)
-      </span>
-      <input type="range" id="time-slider-input" min="0" max="100" value="100" aria-label="time slider">
-      <span id="time-slider-status">Loading…</span>
-      <span class="ts-live">◀ drag left to go back in time</span>
-    </div>
+      <!-- Collapsible body: sections appear when features are active -->
+      <div id="legend-body">
+
+        <!-- Time slider section (visible when time slider is active) -->
+        <div id="legend-timeslider-section" class="legend-section" style="display:none;">
+          <div class="legend-section-divider"></div>
+          <div class="legend-section-content">
+            <span class="legend-section-label">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" width="11" height="11">
+                <circle cx="8" cy="8" r="6"/>
+                <polyline points="8,4 8,8 6,10"/>
+              </svg>
+              14-Day History — <span id="ts-mode-label">Soil Saturation</span>
+            </span>
+            <div class="legend-slider-row">
+              <input type="range" id="time-slider-input" min="0" max="100" value="100" aria-label="time slider">
+              <span id="time-slider-status" class="legend-status">Loading…</span>
+            </div>
+            <span class="legend-hint">◀ drag left for history</span>
+          </div>
+        </div>
+
+        <!-- Radar section (visible when radar is active) -->
+        <div id="legend-radar-section" class="legend-section" style="display:none;">
+          <div class="legend-section-divider"></div>
+          <div class="legend-section-content">
+            <span class="legend-section-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11">
+                <path d="M12 2a10 10 0 0 1 0 20"/>
+                <path d="M12 6a6 6 0 0 1 0 12"/>
+                <path d="M12 10a2 2 0 0 1 0 4"/>
+              </svg>
+              NEXRAD Radar
+            </span>
+            <div class="legend-radar-row">
+              <label class="legend-sub-label">Opacity</label>
+              <input type="range" id="radar-opacity" min="0.1" max="1" step="0.05" value="0.7">
+              <div class="radar-sep"></div>
+              <button id="radar-prev" title="Previous frame">
+                <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><polygon points="13,2 3,8 13,14"/></svg>
+              </button>
+              <button id="radar-play" title="Play/Pause">
+                <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><rect x="3" y="2" width="4" height="12"/><rect x="9" y="2" width="4" height="12"/></svg>
+              </button>
+              <button id="radar-next" title="Next frame">
+                <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12"><polygon points="3,2 13,8 3,14"/></svg>
+              </button>
+              <span id="radar-time" style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted);min-width:70px;text-align:center;"></span>
+              <div class="radar-sep"></div>
+              <label class="legend-sub-label">Speed</label>
+              <select id="radar-speed" style="background:var(--bg-card);border:1px solid var(--border-bright);color:var(--text-secondary);border-radius:3px;font-size:10px;padding:2px 4px;font-family:var(--font-mono);">
+                <option value="1500">Slow</option>
+                <option value="1000" selected>Normal</option>
+                <option value="500">Fast</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Susceptibility section (visible when susceptibility layer is active) -->
+        <div id="legend-susceptibility-section" class="legend-section" style="display:none;">
+          <div class="legend-section-divider"></div>
+          <div class="legend-section-content">
+            <span class="legend-section-label">Landslide Susceptibility</span>
+            <div class="legend-susc-row">
+              <span class="susc-swatch susc-very-low"></span><span class="legend-sub-label">Very Low</span>
+              <span class="susc-swatch susc-low"></span><span class="legend-sub-label">Low</span>
+              <span class="susc-swatch susc-moderate"></span><span class="legend-sub-label">Moderate</span>
+              <span class="susc-swatch susc-high"></span><span class="legend-sub-label">High</span>
+              <span class="susc-swatch susc-very-high"></span><span class="legend-sub-label">Very High</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /legend-body -->
+    </div><!-- /map-legend-panel -->
 
     <!-- ── Station Detail Panel ──────────────────────────────────────── -->
     <div id="detail-panel">

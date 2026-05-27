@@ -8,31 +8,26 @@
 
 /* ─── CSS Variables ─────────────────────────────────────────── */
 :root {
-  /* Backgrounds — dark but not pure black */
   --bg-dark:       #e8f1ef;
   --bg-panel:      #1a2420;
   --bg-card:       #222e29;
   --bg-card-hover: #2a3830;
   --bg-header:     #0d1f3c;
 
-  /* Borders */
   --border:        rgba(140, 195, 160, 0.18);
   --border-bright: rgba(140, 195, 160, 0.40);
 
-  /* Text — all pass WCAG AA on dark backgrounds */
-  --text-primary:   #f0f5f2;   /* 15.3:1 on bg-dark  ✓ AAA */
-  --text-secondary: #b8d4c0;   /* 7.2:1  on bg-dark  ✓ AA  */
-  --text-muted:     #b6d1c2;   /* 4.6:1  on bg-dark  ✓ AA  */
-  --text-on-accent: #ffffff;   /* white on accent colors    */
+  --text-primary:   #f0f5f2;
+  --text-secondary: #b8d4c0;
+  --text-muted:     #b6d1c2;
+  --text-on-accent: #ffffff;
 
-  /* Accent colors — verified contrast on dark bg */
-  --accent-green:  #5ec47f;   /* 5.1:1 on bg-dark   ✓ AA  */
-  --accent-gold:   #d4a840;   /* 5.8:1 on bg-dark   ✓ AA  */
-  --accent-amber:  #e0844a;   /* 4.7:1 on bg-dark   ✓ AA  */
-  --accent-blue:   #55afd4;   /* 5.3:1 on bg-dark   ✓ AA  */
-  --accent-red:    #e07070;   /* 4.6:1 on bg-dark   ✓ AA  */
+  --accent-green:  #5ec47f;
+  --accent-gold:   #d4a840;
+  --accent-amber:  #e0844a;
+  --accent-blue:   #55afd4;
+  --accent-red:    #e07070;
 
-  /* Moisture color scale */
   --dry-1:  #6b3a2a;
   --dry-2:  #9b5a2a;
   --dry-3:  #c4813c;
@@ -97,7 +92,6 @@ html, body {
   height: 40px;
   width: auto;
   display: block;
-  /* Logo is designed for light bg — invert to white for dark header */
   filter: brightness(0) invert(1);
 }
 
@@ -109,7 +103,6 @@ html, body {
   text-decoration: none;
   transition: opacity 0.2s;
 }
-
 .climbs-logo-link:hover { opacity: 0.85; }
 
 .climbs-logo {
@@ -159,163 +152,6 @@ html, body {
   display: flex;
   align-items: center;
   gap: 14px;
-}
-
-/* ─── Download button in panel header ───────────────────────── */
-.download-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: var(--bg-panel);
-  border: 1px solid var(--border-bright);
-  border-radius: var(--radius);
-  font-size: 11px;
-  font-family: var(--font-mono);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.15s;
-  text-decoration: none;
-  margin-top: 8px;
-}
- 
-.download-btn svg {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
-}
- 
-.download-btn:hover {
-  border-color: var(--accent-green);
-  color: var(--accent-green);
-  background: rgba(94,196,127,0.08);
-  text-decoration: none;
-}
- 
-/* Format picker dropdown next to download button */
-.download-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-}
- 
-.download-format {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-bright);
-  border-radius: var(--radius);
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  padding: 5px 7px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
- 
-.download-format:hover {
-  border-color: var(--accent-green);
-  color: var(--text-primary);
-}
-
-/* ─── ArcGIS Legend widget ───────────────────────────────────── */
-.esri-legend {
-  background: var(--bg-panel) !important;
-  color: var(--text-primary) !important;
-}
-
-.esri-legend__service-label {
-  font-family: var(--font-mono) !important;
-  font-size: 10px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.1em !important;
-  color: var(--text-muted) !important;
-}
-
-.esri-legend__layer-caption {
-  font-family: var(--font-mono) !important;
-  font-size: 10px !important;
-  color: var(--text-muted) !important;
-  display: none; /* hide redundant sublayer title */
-}
-
-.esri-legend__layer-cell--info {
-  font-family: var(--font-body) !important;
-  font-size: 12px !important;
-  color: var(--text-secondary) !important;
-}
-
-.esri-expand__container .esri-widget--button {
-  background-color: var(--bg-panel) !important;
-  border: 1px solid var(--border-bright) !important;
-  color: var(--text-secondary) !important;
-}
-
-.esri-expand__container .esri-widget--button:hover {
-  background-color: var(--bg-card-hover) !important;
-  color: var(--text-primary) !important;
-}
-
-/* ─── Radar Toggle Button ────────────────────────────────────── */
-.radar-toggle{
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 13px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-bright);
-  border-radius: var(--radius);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  transition: all 0.2s;
-  font-family: var(--font-body);
-}
-
-.radar-toggle:hover {
-  border-color: var(--accent-blue);
-  color: var(--accent-blue);
-  background: rgba(85, 175, 212, 0.12);
-}
-
-.radar-toggle.active {
-  border-color: var(--accent-blue);
-  color: var(--accent-blue);
-  background: rgba(85, 175, 212, 0.18);
-  box-shadow: 0 0 0 1px rgba(85,175,212,0.3);
-}
-
-.radar-toggle svg { width: 14px; height: 14px; }
-
-/* ─── Radar controls additions ───────────────────────────────── */
-.radar-sep {
-  width: 1px;
-  height: 16px;
-  background: var(--border-bright);
-  flex-shrink: 0;
-}
-
-#radar-controls button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-bright);
-  border-radius: 3px;
-  cursor: pointer;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-  transition: all 0.15s;
-}
-
-#radar-controls button:hover {
-  color: var(--text-primary);
-  border-color: var(--accent-blue);
 }
 
 #last-updated {
@@ -376,55 +212,24 @@ html, body {
 
 #map-loading.hidden { display: none; }
 
-/* ─── Radar Opacity Slider ───────────────────────────────────── */
-#radar-controls {
+/* ─── Basemap Selector ───────────────────────────────────────── */
+#basemap-selector {
   position: absolute;
-  bottom: 125px;
-  left: 32px;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
   background: var(--bg-panel);
   border: 1px solid var(--border-bright);
   border-radius: var(--radius);
-  padding: 10px 14px;
-  z-index: 50;
-  display: none;
-  gap: 10px;
-  align-items: center;
+  padding: 3px;
   box-shadow: var(--shadow);
+  max-width: 450px;
 }
-
-#radar-controls.visible { display: flex; }
-
-#radar-controls label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-#radar-opacity {
-  width: 100px;
-  accent-color: var(--accent-blue);
-}
-
-/* ─── Basemap Selector ───────────────────────────────────────── */
-  #basemap-selector {
-    position: absolute;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 50;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 2px;
-    background: var(--bg-panel);
-    border: 1px solid var(--border-bright);
-    border-radius: var(--radius);
-    padding: 3px;
-    box-shadow: var(--shadow);
-    max-width: 450px;
-  }
 
 .basemap-divider {
   width: 100%;
@@ -472,11 +277,10 @@ html, body {
   outline-offset: 2px;
 }
 
-
 /* ─── Map Toolbar (left-side floating) ───────────────────────── */
 #map-toolbar {
   position: absolute;
-  top: 130px; /* clears ArcGIS zoom + home widgets */
+  top: 130px;
   left: 15px;
   z-index: 50;
   display: flex;
@@ -544,10 +348,9 @@ html, body {
   .map-tool-btn { width: 52px; padding: 8px 6px; }
 }
 
-
 /* ─── Mobile map controls toggle ────────────────────────────── */
 #map-controls-toggle {
-  display: none; /* hidden on desktop */
+  display: none;
 }
 
 @media (max-width: 640px) {
@@ -556,9 +359,9 @@ html, body {
     align-items: center;
     justify-content: center;
     position: absolute;
-    top: 130px;   /* clears zoom + compass + home widgets */
+    top: 130px;
     left: 10px;
-    transform: none;   /* remove the centering transform */
+    transform: none;
     z-index: 51;
     width: 36px;
     height: 36px;
@@ -570,10 +373,7 @@ html, body {
     color: var(--text-secondary);
   }
 
-  #map-controls-toggle svg {
-    width: 16px;
-    height: 16px;
-  }
+  #map-controls-toggle svg { width: 16px; height: 16px; }
 
   #map-controls-toggle.active {
     color: var(--accent-green);
@@ -581,7 +381,6 @@ html, body {
     background: rgba(94,196,127,0.08);
   }
 
-  /* Hide selector by default on mobile, show when open class added */
   #basemap-selector {
     display: none;
     top: 130px;
@@ -595,33 +394,60 @@ html, body {
   }
 }
 
-/* ─── Legend ─────────────────────────────────────────────────── */
-#legend {
+/* ─── Unified Map Legend Panel ───────────────────────────────── */
+#map-legend-panel {
   position: absolute;
   bottom: 36px;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 50;
   background: var(--bg-panel);
   border: 1px solid var(--border-bright);
   border-radius: var(--radius);
-  padding: 9px 16px;
-  z-index: 50;
+  box-shadow: var(--shadow);
+  min-width: 320px;
+  max-width: calc(100vw - 32px);
+}
+
+/* ── Legend header (always visible) ─────────────────────────── */
+#legend-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px 9px 16px;
+}
+
+#legend-bar-row {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+#legend-sat,
+#legend-precip {
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: var(--shadow);
-  pointer-events: none;
 }
 
-#legend span {
-  font-size: 14px;
+.legend-label {
+  font-size: 12px;
   color: var(--text-muted);
   font-family: var(--font-mono);
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.legend-unit {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-left: 4px;
+  white-space: nowrap;
 }
 
 .legend-bar {
-  width: 160px;
+  width: 140px;
   height: 10px;
   border-radius: 5px;
   background: linear-gradient(to right,
@@ -634,7 +460,7 @@ html, body {
 }
 
 .legend-bar-precip {
-  width: 160px;
+  width: 140px;
   height: 10px;
   border-radius: 5px;
   background: linear-gradient(to right,
@@ -645,37 +471,85 @@ html, body {
     #0a2878 100%);
 }
 
-/* ─── Time Slider Bar ────────────────────────────────────────── */
-#time-slider-bar {
-  position: absolute;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
-  display: none;
+/* ── Collapse toggle button ──────────────────────────────────── */
+#legend-collapse-btn {
+  display: flex;
   align-items: center;
-  gap: 12px;
-  background: var(--bg-panel);
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: transparent;
   border: 1px solid var(--border-bright);
-  border-radius: var(--radius);
-  padding: 10px 16px;
-  box-shadow: var(--shadow);
-  white-space: nowrap;
-  max-width: calc(100vw - 32px);
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: all 0.15s;
 }
 
-#time-slider-bar.visible { display: flex; }
+#legend-collapse-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-green);
+}
 
-.ts-label {
+#legend-collapse-btn:focus-visible {
+  outline: 2px solid var(--accent-green);
+  outline-offset: 2px;
+}
+
+#legend-chevron {
+  transition: transform 0.2s ease;
+}
+
+/* ── Collapsible body ────────────────────────────────────────── */
+#legend-body {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.25s ease;
+}
+
+#legend-body.open {
+  max-height: 400px;
+}
+
+/* ── Sections inside the body ────────────────────────────────── */
+.legend-section-divider {
+  height: 1px;
+  background: var(--border-bright);
+  margin: 0 12px;
+}
+
+.legend-section-content {
+  padding: 8px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.legend-section-label {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: 10px;
   font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
-  flex-shrink: 0;
+}
+
+.legend-sub-label {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Time slider section ─────────────────────────────────────── */
+.legend-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 #time-slider-input {
@@ -684,31 +558,150 @@ html, body {
   flex-shrink: 0;
 }
 
-#time-slider-status {
+.legend-status {
   font-size: 12px;
   font-family: var(--font-mono);
   color: var(--accent-green);
   min-width: 110px;
-  text-align: center;
-  flex-shrink: 0;
 }
 
-.ts-live {
+.legend-hint {
   font-size: 10px;
-  font-family: var(--font-mono);
   color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ── Radar section ───────────────────────────────────────────── */
+.legend-radar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#radar-opacity {
+  width: 90px;
+  accent-color: var(--accent-blue);
+}
+
+.radar-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border-bright);
   flex-shrink: 0;
 }
 
-@media (max-width: 640px) {
-  #time-slider-bar {
-    bottom: 120px;
-    flex-wrap: wrap;
-    justify-content: center;
-    padding: 10px 12px;
-  }
-  #time-slider-input { width: 160px; }
-  .ts-live { display: none; }
+#radar-controls button,
+.legend-radar-row button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-bright);
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+#radar-controls button:hover,
+.legend-radar-row button:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+/* ── Susceptibility section ──────────────────────────────────── */
+.legend-susc-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.susc-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.susc-swatch.susc-very-low  { background: #5dba7d; }
+.susc-swatch.susc-low       { background: #7dcf9a; }
+.susc-swatch.susc-moderate  { background: #c9a84c; }
+.susc-swatch.susc-high      { background: #e0844a; }
+.susc-swatch.susc-very-high { background: #e07070; }
+
+/* ─── Radar Toggle Button ────────────────────────────────────── */
+.radar-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  font-family: var(--font-body);
+}
+
+.radar-toggle:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  background: rgba(85, 175, 212, 0.12);
+}
+
+.radar-toggle.active {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  background: rgba(85, 175, 212, 0.18);
+  box-shadow: 0 0 0 1px rgba(85,175,212,0.3);
+}
+
+.radar-toggle svg { width: 14px; height: 14px; }
+
+/* ─── ArcGIS Legend widget ───────────────────────────────────── */
+.esri-legend {
+  background: var(--bg-panel) !important;
+  color: var(--text-primary) !important;
+}
+
+.esri-legend__service-label {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  color: var(--text-muted) !important;
+}
+
+.esri-legend__layer-caption {
+  font-family: var(--font-mono) !important;
+  font-size: 10px !important;
+  color: var(--text-muted) !important;
+  display: none;
+}
+
+.esri-legend__layer-cell--info {
+  font-family: var(--font-body) !important;
+  font-size: 12px !important;
+  color: var(--text-secondary) !important;
+}
+
+.esri-expand__container .esri-widget--button {
+  background-color: var(--bg-panel) !important;
+  border: 1px solid var(--border-bright) !important;
+  color: var(--text-secondary) !important;
+}
+
+.esri-expand__container .esri-widget--button:hover {
+  background-color: var(--bg-card-hover) !important;
+  color: var(--text-primary) !important;
 }
 
 /* ─── Detail Panel ───────────────────────────────────────────── */
@@ -742,7 +735,7 @@ html, body {
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 3px;
-  padding-right: 36px; /* space for close button */
+  padding-right: 36px;
 }
 
 #panel-header .panel-meta {
@@ -776,7 +769,6 @@ html, body {
   border-color: var(--accent-amber);
 }
 
-/* Focus styles for keyboard nav (ADA) */
 #panel-close:focus-visible,
 .radar-toggle:focus-visible,
 .kgs-logo-link:focus-visible {
@@ -798,6 +790,39 @@ html, body {
   border-radius: 3px;
 }
 
+/* ─── Panel Tabs ─────────────────────────────────────────────── */
+.panel-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-bright);
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+
+.panel-tab {
+  flex: 1;
+  padding: 10px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  transition: all 0.15s;
+}
+
+.panel-tab:hover { color: var(--text-primary); }
+
+.panel-tab.active {
+  color: var(--accent-green);
+  border-bottom-color: var(--accent-green);
+}
+
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
 /* ─── Section Labels ─────────────────────────────────────────── */
 .section-label {
   font-size: 11px;
@@ -807,130 +832,185 @@ html, body {
   font-family: var(--font-mono);
   margin-bottom: 10px;
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--border-bright);
+  border-bottom: 1px solid var(--border);
 }
 
 /* ─── Sensor Cards ───────────────────────────────────────────── */
-.latest-grid {
+.sensor-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 22px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
 .sensor-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 11px 13px;
-  transition: border-color 0.2s;
+  padding: 12px 14px;
 }
 
-.sensor-card:hover { border-color: var(--border-bright); }
-
-.sensor-card .sc-type {
+.sc-label {
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
   font-family: var(--font-mono);
   margin-bottom: 4px;
 }
 
-.sensor-card .sc-value {
+.sc-value {
   font-size: 22px;
   font-weight: 600;
-  font-family: var(--font-mono);
-  line-height: 1;
-  margin-bottom: 2px;
+  line-height: 1.1;
+  color: var(--accent-green);
 }
 
-.sensor-card .sc-unit {
+.sc-unit {
   font-size: 11px;
   color: var(--text-muted);
   font-family: var(--font-mono);
+  margin-left: 3px;
 }
 
-.sensor-card .sc-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 5px;
+.sc-depth {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-top: 3px;
 }
 
-/* ─── Panel Tab Bar ──────────────────────────────────────────── */
-/* Add to the bottom of css/style.css                            */
+.sc-moisture .sc-value { color: var(--accent-green); }
+.sc-matric   .sc-value { color: var(--accent-amber); }
+.sc-temp     .sc-value { color: var(--accent-blue);  }
+.sc-precip   .sc-value { color: var(--accent-gold);  }
+.sc-airtemp  .sc-value { color: #a0c4e8; }
+.sc-humidity .sc-value { color: #7ecec4; }
 
-#panel-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border-bright);
+/* ─── Charts ─────────────────────────────────────────────────── */
+.chart-section { margin-bottom: 22px; }
+
+.chart-wrapper {
   background: var(--bg-card);
-  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
 }
 
-.panel-tab {
-  flex: 1;
-  padding: 10px 12px;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  transition: all 0.15s;
+.chart-wrapper canvas { max-height: 200px; }
+
+/* ─── Loading State ──────────────────────────────────────────── */
+#panel-loading {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  height: 200px;
+  gap: 14px;
 }
 
-.panel-tab svg {
-  width: 13px;
-  height: 13px;
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--border-bright);
+  border-top-color: var(--accent-green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#panel-loading p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+/* ─── Error State ────────────────────────────────────────────── */
+.panel-error {
+  background: rgba(220, 80, 80, 0.12);
+  border: 1px solid rgba(220, 80, 80, 0.35);
+  border-radius: var(--radius);
+  padding: 13px 16px;
+  font-size: 13px;
+  color: #f09090;
+  margin-bottom: 16px;
+}
+
+/* ─── Download button ────────────────────────────────────────── */
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  margin-top: 8px;
+}
+
+.download-btn svg {
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
 }
 
-.panel-tab:hover {
-  color: var(--text-primary);
-  background: var(--bg-card-hover);
-}
-
-.panel-tab.active {
+.download-btn:hover {
+  border-color: var(--accent-green);
   color: var(--accent-green);
-  border-bottom-color: var(--accent-green);
-  background: rgba(94, 196, 127, 0.06);
+  background: rgba(94,196,127,0.08);
+  text-decoration: none;
 }
 
-.panel-tab:focus-visible {
-  outline: 2px solid var(--accent-green);
-  outline-offset: -2px;
+.download-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
 }
 
-/* ─── Tab Pane Visibility ────────────────────────────────────── */
-.tab-pane { display: none; }
-.tab-pane.active { display: block; }
-
-/* ─── Station Info Pane ──────────────────────────────────────── */
-#tab-info {
-  padding: 0;
+.download-format {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-bright);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 7px;
+  cursor: pointer;
+  transition: border-color 0.15s;
 }
 
+.download-format:hover {
+  border-color: var(--accent-green);
+  color: var(--text-primary);
+}
+
+/* ─── Site Info Tab ──────────────────────────────────────────── */
 .station-photo {
   width: 100%;
-  aspect-ratio: 3 / 4;
+  height: 160px;
   object-fit: cover;
-  display: block;
+  border-radius: var(--radius);
+  margin-bottom: 14px;
   border-bottom: 1px solid var(--border);
-  background: var(--bg-card);
 }
 
 .station-photo-placeholder {
   width: 100%;
-  aspect-ratio: 3 / 4;
+  height: 120px;
   background: var(--bg-card);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -985,7 +1065,6 @@ html, body {
   font-weight: 500;
 }
 
-/* susceptibility badge */
 .susc-badge {
   display: inline-block;
   padding: 2px 8px;
@@ -997,80 +1076,17 @@ html, body {
   letter-spacing: 0.05em;
 }
 
-.susc-very-low  { background: rgba(93,186,125,0.15); color: #5dba7d; }
-.susc-low       { background: rgba(93,186,125,0.12); color: #7dcf9a; }
-.susc-moderate  { background: rgba(201,168,76,0.15); color: #c9a84c; }
-.susc-high      { background: rgba(224,132,74,0.15); color: #e0844a; }
+.susc-very-low  { background: rgba(93,186,125,0.15);  color: #5dba7d; }
+.susc-low       { background: rgba(93,186,125,0.12);  color: #7dcf9a; }
+.susc-moderate  { background: rgba(201,168,76,0.15);  color: #c9a84c; }
+.susc-high      { background: rgba(224,132,74,0.15);  color: #e0844a; }
 .susc-very-high { background: rgba(224,112,112,0.15); color: #e07070; }
 .susc-unknown   { background: rgba(140,195,160,0.08); color: var(--text-muted); }
 
-/* coords row */
 .coords-text {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-secondary);
-}
-
-/* ─── Data Pane ──────────────────────────────────────────────── */
-/* #tab-data uses the existing #panel-body scroll area */
-/* No extra CSS needed — existing sensor-card, chart-section etc apply */
-
-/* Accent colors on values — all AA-compliant on --bg-card (#222e29) */
-.sc-moisture .sc-value { color: var(--accent-green); }  /* 4.9:1 ✓ */
-.sc-matric   .sc-value { color: var(--accent-amber); }  /* 4.5:1 ✓ */
-.sc-temp     .sc-value { color: var(--accent-blue);  }  /* 5.1:1 ✓ */
-.sc-precip   .sc-value { color: var(--accent-gold);  }  /* 5.6:1 ✓ */
-.sc-airtemp  .sc-value { color: #a0c4e8; }  /* light steel blue */
-.sc-humidity .sc-value { color: #7ecec4; }  /* teal */
-
-/* ─── Charts ─────────────────────────────────────────────────── */
-.chart-section { margin-bottom: 22px; }
-
-.chart-wrapper {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px;
-}
-
-.chart-wrapper canvas { max-height: 200px; }
-
-/* ─── Loading State ──────────────────────────────────────────── */
-#panel-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  gap: 14px;
-}
-
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 2px solid var(--border-bright);
-  border-top-color: var(--accent-green);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-#panel-loading p {
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-}
-
-/* ─── Error State ────────────────────────────────────────────── */
-.panel-error {
-  background: rgba(220, 80, 80, 0.12);
-  border: 1px solid rgba(220, 80, 80, 0.35);
-  border-radius: var(--radius);
-  padding: 13px 16px;
-  font-size: 13px;
-  color: #f09090;   /* 5.2:1 on bg-panel ✓ AA */
-  margin-bottom: 16px;
 }
 
 /* ─── Responsive ─────────────────────────────────────────────── */
@@ -1080,17 +1096,14 @@ html, body {
     align-items: flex-start;
     gap: 10px;
   }
-  
-  .kgs-logo { height: 32px; }
+  .kgs-logo   { height: 32px; }
   .climbs-logo { height: 32px; }
-
   .title-block h1 {
     font-size: 18px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
   .header-right {
     width: 100%;
     margin-left: 15px;
@@ -1098,10 +1111,7 @@ html, body {
     flex-wrap: wrap;
     gap: 6px;
   }
-
-  .title-block p:first-of-type {
-    display: none;
-  }
+  .title-block p:first-of-type { display: none; }
 }
 
 @media (max-width: 640px) {
@@ -1113,7 +1123,8 @@ html, body {
     gap: 8px;
   }
 
-  .kgs-logo { height: 28px; }
+  .kgs-logo    { height: 28px; }
+  .climbs-logo { height: 28px; }
   .header-divider { display: none; }
 
   .logo-stack {
@@ -1122,12 +1133,10 @@ html, body {
     gap: 10px;
   }
 
-  .climbs-logo { height: 28px; }
-
   .title-block {
     flex: 1;
     min-width: 0;
-    margin-left:5px;
+    margin-left: 5px;
   }
 
   .title-block h1 {
@@ -1152,7 +1161,163 @@ html, body {
 
   #last-updated { font-size: 10px; }
 
-  #detail-panel { top: auto; bottom: -100%; right: 0; height: 80vh; width: 100%; }
+  #detail-panel {
+    top: auto;
+    bottom: -100%;
+    right: 0;
+    height: 80vh;
+    width: 100%;
+  }
   #detail-panel.open { bottom: 0; right: 0; }
-  #legend { display: none; }
+
+  /* Legend panel on mobile: full width, pinned to bottom */
+  #map-legend-panel {
+    bottom: 10px;
+    min-width: 0;
+    width: calc(100vw - 20px);
+  }
+  #time-slider-input { width: 140px; }
+  .legend-hint { display: none; }
 }
+
+/* ─── Panel Tab Bar ──────────────────────────────────────────── */
+#panel-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-bright);
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+
+.panel-tab {
+  flex: 1;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.panel-tab svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.panel-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-card-hover);
+}
+
+.panel-tab.active {
+  color: var(--accent-green);
+  border-bottom-color: var(--accent-green);
+  background: rgba(94, 196, 127, 0.06);
+}
+
+.panel-tab:focus-visible {
+  outline: 2px solid var(--accent-green);
+  outline-offset: -2px;
+}
+
+/* ─── Tab Pane Visibility ────────────────────────────────────── */
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* ─── Station Info Pane ──────────────────────────────────────── */
+#tab-info { padding: 0; }
+
+.station-photo {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  display: block;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.station-photo-placeholder {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  gap: 8px;
+}
+
+.station-photo-placeholder svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0.4;
+}
+
+/* ─── Sensor Cards ───────────────────────────────────────────── */
+.latest-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.sensor-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  transition: border-color 0.2s;
+}
+
+.sensor-card:hover { border-color: var(--border-bright); }
+
+.sensor-card .sc-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-bottom: 4px;
+}
+
+.sensor-card .sc-value {
+  font-size: 22px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.sensor-card .sc-unit {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.sensor-card .sc-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 5px;
+}
+
+.sc-moisture .sc-value { color: var(--accent-green); }
+.sc-matric   .sc-value { color: var(--accent-amber); }
+.sc-temp     .sc-value { color: var(--accent-blue);  }
+.sc-precip   .sc-value { color: var(--accent-gold);  }
+.sc-airtemp  .sc-value { color: #a0c4e8; }
+.sc-humidity .sc-value { color: #7ecec4; }

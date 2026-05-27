@@ -186,8 +186,9 @@ require([
   basemapContent.querySelector("#radar-toggle").addEventListener("click", function () {
     radarVisible = !radarVisible;
     this.classList.toggle("active", radarVisible);
-    document.getElementById("radar-controls").classList.toggle("visible", radarVisible);
+    document.getElementById("legend-radar-section").style.display = radarVisible ? 'block' : 'none';
     if (radarVisible) {
+      legendAutoOpen();
       startRadarAnimation();
     } else {
       stopRadarAnimation();
@@ -230,6 +231,26 @@ require([
     } else {
       renderMarkers(stationsData);
     }
+  });
+
+    // ─── Legend Panel helpers ─────────────────────────────────────────────────
+  function legendAutoOpen() {
+    const body    = document.getElementById('legend-body');
+    const chevron = document.getElementById('legend-chevron');
+    const btn     = document.getElementById('legend-collapse-btn');
+    if (!body.classList.contains('open')) {
+      body.classList.add('open');
+      btn.setAttribute('aria-expanded', 'true');
+      chevron.style.transform = 'rotate(180deg)';
+    }
+  }
+
+  document.getElementById('legend-collapse-btn').addEventListener('click', function () {
+    const body    = document.getElementById('legend-body');
+    const chevron = document.getElementById('legend-chevron');
+    const isOpen  = body.classList.toggle('open');
+    this.setAttribute('aria-expanded', isOpen);
+    chevron.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
   });
 
   // ─── Landslide Susceptibility Layer ────────────────────────────────────────────
@@ -600,8 +621,9 @@ require([
   // ─── Time Slider ─────────────────────────────────────────────────────────────
   function activateTimeSlider() {
     timeSliderActive = true;
-    document.getElementById("time-slider-bar").classList.add("visible");
+    document.getElementById("legend-timeslider-section").style.display = 'block';
     document.getElementById("timeslider-toggle").classList.add("active");
+    legendAutoOpen();
 
     if (historyData) {
       initSlider();
@@ -624,9 +646,8 @@ require([
   function deactivateTimeSlider() {
     timeSliderActive = false;
     timeSliderIndex  = null;
-    document.getElementById("time-slider-bar").classList.remove("visible");
+    document.getElementById("legend-timeslider-section").style.display = 'none';
     document.getElementById("timeslider-toggle").classList.remove("active");
-    // Restore live data
     renderMarkers(stationsData);
   }
 
@@ -1180,34 +1201,13 @@ function renderAtIndex(idx) {
   view.when(() => {
     loadStations();
 
-    const susceptibilityLegend = new Legend({
-      view,
-      layerInfos: [{
-        layer: susceptibilityLayer,
-        title: "Landslide Susceptibility",
-      }],
-      style: "classic",
-    });
-
-    const legendExpand = new Expand({
-      view,
-      content: susceptibilityLegend,
-      expanded: false,
-      expandIconClass: "esri-icon-legend",
-      expandTooltip: "Susceptibility Legend",
-      collapseTooltip: "Susceptibility Legend",
-      id: "susceptibility-legend-expand",
-    });
-
-    view.ui.add(legendExpand, "bottom-left");
-
     // Show/hide legend expand with the layer toggle
     basemapContent.querySelector("#susceptibility-toggle").addEventListener("click", function () {
       const isOn = !susceptibilityLayer.visible;
       susceptibilityLayer.visible = isOn;
       this.classList.toggle("active", isOn);
-      legendExpand.visible  = isOn;
-      legendExpand.expanded = isOn; // auto-open when layer turns on
+      document.getElementById("legend-susceptibility-section").style.display = isOn ? 'block' : 'none';
+      if (isOn) legendAutoOpen();
     });
 
     // If a station ID was passed in the URL hash, open it once markers load
