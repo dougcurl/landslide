@@ -1,8 +1,7 @@
 <?php
 /**
  * api/get_history_summary.php
- * Returns lightweight moisture timeseries for all stations — used by the
- * time slider to animate historical VWC across the map.
+ * Returns lightweight saturation + precipitation timeseries for all stations.
  */
 require_once __DIR__ . '/../config.php';
 
@@ -12,54 +11,67 @@ header('Cache-Control: no-cache');
 
 $result = [];
 
-foreach (STATIONS as $s) {
-    $path = CACHE_DIR . $s['id'] . '.json';
+foreach (STATIONS as $station_cfg) {                          // ← renamed $s → $station_cfg
+    $path = CACHE_DIR . $station_cfg['id'] . '.json';
     if (!file_exists($path)) continue;
     $d = json_decode(file_get_contents($path), true);
     if (!$d || empty($d['history'])) continue;
 
-    // Build per-port vwc_max lookup from station config
-    $station_cfg = null;
-    foreach (STATIONS as $sc) {
-        if ($sc['id'] === $d['station_id']) { $station_cfg = $sc; break; }
-    }
+    // Build per-port vwc_max lookup
     $port_maxes = [];
-    if ($station_cfg) {
-        foreach ($station_cfg['ports'] as $port_num => $pcfg) {
-            if (!empty($pcfg['vwc_max']) && $pcfg['vwc_max'] > 0) {
-                $port_maxes[$port_num] = $pcfg['vwc_max'];
-            }
+    foreach ($station_cfg['ports'] as $port_num => $pcfg) {
+        if (!empty($pcfg['vwc_max']) && $pcfg['vwc_max'] > 0) {
+            $port_maxes[$port_num] = $pcfg['vwc_max'];
         }
     }
 
-    // Build compact saturation timeseries: [ [timestamp, sat_avg], ... ]
-    // Only include every 4th record to reduce payload size (adjust as needed).
-    $series = [];
+    // Build compact timeseries: [ [timestamp, sat_avg, precip_mm], ... ]
+    // Every 4th record (~hourly resolution).
+    $series  = [];
     $history = $d['history'];
-    foreach ($history as $i => $row) {
-        if ($i % 4 !== 0) continue;
+    $n       = count($history);
 
-        $sat_vals = [];
-        foreach ($row['sensors'] as $s) {
-            if ($s['type'] !== 'soil_moisture') continue;
-            $port = $s['port'];
-            if (isset($port_maxes[$port]) && $s['value'] !== null) {
-                $sat_vals[] = min(1.0, $s['value'] / $port_maxes[$port]);
+    for ($i = 0; $i < $n; $i += 4) {
+        // Saturation from the anchor row
+        $anchor     = $history[$i];
+        $sat_vals   = [];
+        foreach ($anchor['sensors'] as $sensor) {
+            if ($sensor['type'] === 'soil_moisture') {
+                $port = $sensor['port'];
+                if (isset($port_maxes[$port]) && $sensor['value'] !== null) {
+                    $sat_vals[] = min(1.0, $sensor['value'] / $port_maxes[$port]);
+                }
             }
         }
         $sat_avg = !empty($sat_vals)
             ? round(array_sum($sat_vals) / count($sat_vals), 4)
             : null;
 
-        if ($sat_avg !== null) {
-            $series[] = [strtotime($row['datetime']), $sat_avg];
+        // Precip summed across this window (rows i through i+3)
+        $precip_sum = 0.0;
+        $has_precip = false;
+        for ($j = $i; $j < min($i + 4, $n); $j++) {
+            foreach ($history[$j]['sensors'] as $sensor) {
+                if ($sensor['type'] === 'precipitation' && $sensor['value'] !== null) {
+                    $precip_sum += $sensor['value'];
+                    $has_precip  = true;
+                }
+            }
+        }
+
+        if ($sat_avg !== null || $has_precip) {
+            $series[] = [
+                strtotime($anchor['datetime']),
+                $sat_avg,
+                $has_precip ? round($precip_sum, 2) : null,
+            ];
         }
     }
 
     if (!empty($series)) {
         $result[] = [
             'station_id' => $d['station_id'],
-            'series'     => $series,
+            'series'     => $series,   // each element: [ts, sat_avg, precip_mm]
         ];
     }
 }

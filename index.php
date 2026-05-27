@@ -140,7 +140,7 @@ require_once __DIR__ . '/config.php';
           <circle cx="8" cy="8" r="6"/>
           <polyline points="8,4 8,8 6,10"/>
         </svg>
-        14-Day History (Saturation Only)
+        14-Day History (<span id="ts-mode-label">Soil Saturation</span>)
       </span>
       <input type="range" id="time-slider-input" min="0" max="100" value="100" aria-label="time slider">
       <span id="time-slider-status">Loading…</span>

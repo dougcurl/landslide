@@ -636,7 +636,7 @@ require([
     renderAtIndex(timestamps.length - 1);
   }
 
-  function renderAtIndex(idx) {
+function renderAtIndex(idx) {
     if (!historyData || !window._tsTimestamps) return;
     const ts = window._tsTimestamps[idx];
     const dt = new Date(ts * 1000);
@@ -645,26 +645,29 @@ require([
       dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " +
       dt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 
-    // Build a lookup of station_id => moisture at this timestamp (nearest match)
-    const moistureAt = {};
+    // Build lookup: station_id => {sat, precip} at nearest timestamp
+    const dataAt = {};
     historyData.forEach(s => {
-      // Find closest timestamp entry
-      let best = null, bestDiff = Infinity;
-      s.series.forEach(([t, v]) => {
+      let bestSat = null, bestPrecip = null, bestDiff = Infinity;
+      s.series.forEach(([t, sat, precip]) => {
         const diff = Math.abs(t - ts);
-        if (diff < bestDiff) { bestDiff = diff; best = v; }
+        if (diff < bestDiff) { bestDiff = diff; bestSat = sat; bestPrecip = precip; }
       });
-      if (best !== null) moistureAt[s.station_id] = best;
+      dataAt[s.station_id] = { sat: bestSat, precip: bestPrecip };
     });
 
-    // Re-render markers with historical saturation values
-    const historicalStations = stationsData.map(st => ({
-      ...st,
-      latest_saturation_avg: moistureAt[st.station_id] ?? null,
-      latest_saturation_pct: moistureAt[st.station_id] != null
-        ? Math.round(moistureAt[st.station_id] * 1000) / 10
-        : null,
-    }));
+    // Re-render with historical values for whichever mode is active
+    const historicalStations = stationsData.map(st => {
+      const m = dataAt[st.station_id] ?? { sat: null, precip: null };
+      return {
+        ...st,
+        latest_saturation_avg: m.sat,
+        latest_saturation_pct: m.sat != null ? Math.round(m.sat * 1000) / 10 : null,
+        rainfall_24h_mm:       m.precip,
+      };
+    });
+    document.getElementById('ts-mode-label').textContent =
+      isPrecip ? 'Precipitation' : 'Soil Saturation';
     renderMarkers(historicalStations);
   }
 
@@ -1098,10 +1101,11 @@ require([
 
     const ctx = document.getElementById(canvasId)?.getContext("2d");
     if (!ctx) return;
-
     const yAxisLabel = sensorType === "soil_moisture"
       ? "VWC (%)"
-      : (yLabel.match(/\(([^)]+)\)/)?.[1] || yLabel);
+      : sensorType === "matric_potential"
+        ? "Water Potential"
+        : (yLabel.match(/\(([^)]+)\)/)?.[1] || yLabel);
 
     try {
     charts[canvasId] = new Chart(ctx, {
