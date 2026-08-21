@@ -799,7 +799,7 @@ function renderAtIndex(idx) {
     const dt = data.latest_datetime ? new Date(data.latest_datetime).toLocaleString() : "No data yet";
     document.getElementById("panel-header").querySelector(".panel-meta").textContent =`${data.region}  •  Last reading: ${dt}`;
 
-    renderDownloadRow(data.station_id);
+    renderDownloadRow(data);
   
     // Switch to info tab first (it's the default)
     document.querySelectorAll('.panel-tab').forEach(b => b.classList.remove('active'));
@@ -814,17 +814,47 @@ function renderAtIndex(idx) {
     renderDataTab(data);
   }
   
+  // ────────────────────────────────────────────────────────────────────────────
+ // DOWNLOAD BUTTON ────────────────────────────────────────────────────────────
+ // Renders the download button + format selector in the panel header.
+ // If the station has no cached history (connectivity/telemetry gap), the
+ // download controls are suppressed and a contact message is shown instead.
  // ────────────────────────────────────────────────────────────────────────────
- // DOWNLOAD BUTTON ─────────────────────────────────────────────────────────────
- // Renders the download button and format selector in the panel header, with click handler to trigger download
- // -------------------------------------------------------------------------------
-  function renderDownloadRow(stationId) {
+  function renderDownloadRow(data) {
     // Remove any existing download row
     const existing = document.getElementById('panel-download-row');
     if (existing) existing.remove();
-  
+
+    // Accept either a full data object or a bare station id (back-compat)
+    const stationId = (typeof data === 'string') ? data : data.station_id;
+    const obj       = (typeof data === 'string') ? {} : data;
+
+    // Data is considered downloadable only if the cache actually holds rows.
+    // download_station.php returns an error on empty history, so this mirrors it.
+    const hasData =
+      Array.isArray(obj.history) && obj.history.length > 0 &&
+      !!obj.latest_datetime;
+
     const row = document.createElement('div');
     row.id = 'panel-download-row';
+
+    if (!hasData) {
+      row.className = 'download-unavailable';
+      row.innerHTML = `
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <circle cx="8" cy="8" r="6.5"/>
+          <path d="M8 5 v4" stroke-linecap="round"/>
+          <circle cx="8" cy="11.5" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+        <span>
+          Recent data for this station is unavailable on this website — likely a telemetry or connectivity issue. 
+          For a data export, please contact the <a href="https://kygs.uky.edu/research/landslides/" target="_blank" rel="noopener">KGS
+          Landslide Hazards and Engineering Team</a>.
+        </span>`;
+      document.getElementById('panel-header').appendChild(row);
+      return;   // no listeners to wire up
+    }
+
     row.className = 'download-row';
     row.innerHTML = `
       <select class="download-format" id="download-format" title="Download format">
@@ -839,15 +869,13 @@ function renderAtIndex(idx) {
         Download 14-Day Data
       </button>
     `;
-  
-    // Insert after panel-meta inside panel-header
+
     document.getElementById('panel-header').appendChild(row);
-  
+
     document.getElementById('download-btn').addEventListener('click', function () {
       const format = document.getElementById('download-format').value;
       const url    = `api/download_station.php?id=${encodeURIComponent(stationId)}&format=${format}`;
-  
-      // Trigger download via a temporary link
+
       const a  = document.createElement('a');
       a.href   = url;
       a.download = '';
@@ -888,14 +916,7 @@ function renderAtIndex(idx) {
       rows += infoRow('USDA-NRCS Soil Unit',       si.soil_unit      || '—');
       rows += infoRow('Elevation',       si.elevation_m != null ? si.elevation_m + ' m' : '—');
       rows += infoRow('Slope',           si.slope_deg  != null ? si.slope_deg + '°' : '—');
-      rows += infoRow('Landslide Susceptibility',  susceptibilityBadge(si.susceptibility));
-      // Saturation with color badge
-      const satPct = data.latest_saturation_pct ?? null;
-      rows += infoRow('Latest Avg Saturation',
-        satPct !== null
-          ? `<span style="color:${colorToHex(saturationToColor(satPct / 100))};font-weight:600;">${satPct}%</span>`
-          : '—'
-      );
+      rows += infoRow('Landslide Susceptibility<br>(via Susceptibility Map)',  si.susceptibility || '—');
       rows += infoRow('Sensor Depths',   si.sensor_depths  || '—');
       rows += infoRow('Installed',       si.date_installed || '—');
       rows += infoRow('Collaborator',    si.collaborator   || '—');    
@@ -907,9 +928,7 @@ function renderAtIndex(idx) {
         `<span class="coords-text">${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}</span>`);
     }
   
-    rows += infoRow('Station ID', `<span class="coords-text">${escHtml(data.station_id)}</span>`);
-
-    // Station ID
+     // Station ID
     rows += infoRow('Station ID', `<span class="coords-text">${escHtml(data.station_id)}</span>`);
   
     if (!si && !data.lat) {
@@ -986,15 +1005,9 @@ function renderAtIndex(idx) {
   
     if (!sensors.length) {
       html += `<p style="color:var(--text-muted);font-size:12px;padding:8px 0;grid-column:1/-1;">
-                No data cached yet — check back after the first refresh cycle.
+                No data cached — check back after a refresh cycle. This station may have cloud connectivity issues. Please contact the <a href="https://kygs.uky.edu/research/landslides/" style="color:var(--text-primary);"  target="_blank" rel="noopener">KGS Landslide Hazards and Engineering Team</a> for latest data.
               </p>`;
     }
-  
-    moistures.forEach(s => html += sensorCard(s, "sc-moisture"));
-    matrics.forEach(s   => html += sensorCard(s, "sc-matric"));
-    temps.forEach(s     => html += sensorCard(s, "sc-temp"));
-    airtemps.forEach(s  => html += sensorCard(s, "sc-airtemp"));
-    humidities.forEach(s => html += sensorCard(s, "sc-humidity"));
   
     // Precipitation: show 24-hr total instead of latest interval reading
     if (precips.length > 0) {
@@ -1025,6 +1038,12 @@ function renderAtIndex(idx) {
         <div class="sc-unit">${satPct !== null ? '%' : ''}</div>
         <div class="sc-label">Avg across all depths</div>
       </div>`;
+
+    moistures.forEach(s => html += sensorCard(s, "sc-moisture"));
+    matrics.forEach(s   => html += sensorCard(s, "sc-matric"));
+    temps.forEach(s     => html += sensorCard(s, "sc-temp"));
+    airtemps.forEach(s  => html += sensorCard(s, "sc-airtemp"));
+    humidities.forEach(s => html += sensorCard(s, "sc-humidity"));
   
     html += `</div>`;  // close latest-grid
   

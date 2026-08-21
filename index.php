@@ -174,11 +174,11 @@ require_once __DIR__ . '/config.php';
           <div class="legend-section-content">
             <span class="legend-section-label">Landslide Susceptibility</span>
             <div class="legend-susc-row">
-              <span class="susc-swatch susc-very-low"></span><span class="legend-sub-label">Very Low</span>
-              <span class="susc-swatch susc-low"></span><span class="legend-sub-label">Low</span>
+              <span class="susc-swatch susc-very-low"></span><span class="legend-sub-label">Low</span>
+              <span class="susc-swatch susc-low"></span><span class="legend-sub-label">Low - Moderate</span>
               <span class="susc-swatch susc-moderate"></span><span class="legend-sub-label">Moderate</span>
-              <span class="susc-swatch susc-high"></span><span class="legend-sub-label">High</span>
-              <span class="susc-swatch susc-very-high"></span><span class="legend-sub-label">Very High</span>
+              <span class="susc-swatch susc-high"></span><span class="legend-sub-label">Moderate - High</span>
+              <span class="susc-swatch susc-very-high"></span><span class="legend-sub-label">High</span>
             </div>
           </div>
         </div>

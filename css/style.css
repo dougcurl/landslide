@@ -628,11 +628,11 @@ html, body {
   flex-shrink: 0;
 }
 
-.susc-swatch.susc-very-low  { background: #5dba7d; }
-.susc-swatch.susc-low       { background: #7dcf9a; }
-.susc-swatch.susc-moderate  { background: #c9a84c; }
-.susc-swatch.susc-high      { background: #e0844a; }
-.susc-swatch.susc-very-high { background: #e07070; }
+.susc-swatch.susc-very-low  { background: #F5F9CE } /*Low*/
+.susc-swatch.susc-low       { background: #F4DA9A } /*Low - Moderate*/
+.susc-swatch.susc-moderate  { background: #F4B587} /*Moderate*/
+.susc-swatch.susc-high      { background: #EC8376} /*Moderate - High*/
+.susc-swatch.susc-very-high { background: #CD607A} /*High*/
 
 /* ─── Radar Toggle Button ────────────────────────────────────── */
 .radar-toggle {
@@ -995,10 +995,43 @@ html, body {
   color: var(--text-primary);
 }
 
+/* Shown in place of the download row when a station has no cached data */
+.download-unavailable {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(214, 158, 46, 0.08);
+  border: 1px solid rgba(214, 158, 46, 0.35);
+  border-radius: var(--radius);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.download-unavailable svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #d69e2e;
+}
+
+.download-unavailable a {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.download-unavailable a:hover {
+  color: var(--accent-green);
+  text-decoration: none;
+}
+
 /* ─── Site Info Tab ──────────────────────────────────────────── */
 .station-photo {
   width: 100%;
-  height: 160px;
+  height: 100%;
   object-fit: cover;
   border-radius: var(--radius);
   margin-bottom: 14px;
