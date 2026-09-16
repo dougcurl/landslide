@@ -744,6 +744,57 @@ html, body {
   font-family: var(--font-mono);
 }
 
+
+/* ─── Panel Pager (overlapping station markers) ────────────────────────── */
+#panel-pager {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;      /* was implicit full-width via block layout */
+  margin-bottom: 8px;      /* was margin-left: auto */
+  padding: 2px 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+#panel-pager button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: calc(var(--radius) - 2px);
+  transition: background 0.15s, color 0.15s;
+}
+
+#panel-pager button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent-green);
+}
+
+#panel-pager button:active {
+  transform: scale(0.92);
+}
+
+#panel-pager #pager-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  min-width: 32px;
+  text-align: center;
+  white-space: nowrap;
+}
+
 #panel-close {
   position: absolute;
   top: 16px;

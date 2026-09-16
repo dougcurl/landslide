@@ -544,7 +544,19 @@ require([
   // ─── Render Markers via GraphicsLayer ────────────────────────────────────────
   function renderMarkers(stations) {
     stationLayer.removeAll();
-    stations.forEach(station => {
+
+    // Draw N/A stations first (bottom), data-bearing stations last (top)
+    const sorted = [...stations].sort((a, b) => {
+      const aHasData = symbolizeBy === 'precip'
+        ? a.rainfall_24h_mm != null
+        : a.latest_saturation_avg != null;
+      const bHasData = symbolizeBy === 'precip'
+        ? b.rainfall_24h_mm != null
+        : b.latest_saturation_avg != null;
+      return Number(aHasData) - Number(bHasData); // false(0) before true(1)
+    });
+
+    sorted.forEach(station => {
       const svg = buildMarkerSVG(station);
       const graphic = new Graphic({
         geometry: {
@@ -570,12 +582,13 @@ require([
   // ─── Click handler on the graphics layer ─────────────────────────────────────
   view.on("click", function (event) {
     view.hitTest(event).then(function (response) {
-      const hit = response.results.find(r =>
+      const matches = response.results.filter(r =>
         r.graphic && r.graphic.layer === stationLayer
       );
-      if (hit) {
-        openPanel(hit.graphic.attributes.station_id);
-      }
+      if (matches.length === 0) return;
+
+      const stationIds = matches.map(r => r.graphic.attributes.station_id);
+      openPanel(stationIds[0], stationIds); // pass the full stack, open first
     });
   });
 
@@ -728,12 +741,17 @@ function renderAtIndex(idx) {
   });
 
   // ─── Panel ───────────────────────────────────────────────────────────────────
-  function openPanel(stationId) {
-    activeStationId = stationId;
-    document.getElementById("detail-panel").classList.add("open");
-    // Re-render markers so active one gets white ring
-    renderMarkers(stationsData);
-    showPanelLoading();
+  let panelStack = [];
+  let panelIndex = 0;
+
+ function openPanel(stationId, stack) {
+  panelStack = stack && stack.length ? stack : [stationId];
+  panelIndex = panelStack.indexOf(stationId);
+  activeStationId = stationId;
+  document.getElementById("detail-panel").classList.add("open");
+  renderMarkers(stationsData);
+  showPanelLoading();
+  updatePagerUI();
 
     loadChartJS()
       .then(() => fetch(`api/get_station_data.php?id=${encodeURIComponent(stationId)}`))
@@ -750,6 +768,32 @@ function renderAtIndex(idx) {
         showPanelError(`Failed to load station data. (${err.message})`);
       });
   }
+
+  function updatePagerUI() {
+    let pager = document.getElementById('panel-pager');
+    if (panelStack.length <= 1) {
+      if (pager) pager.remove();
+      return;
+    }
+    if (!pager) {
+      pager = document.createElement('div');
+      pager.id = 'panel-pager';
+      pager.innerHTML = `
+        <button id="pager-prev">‹</button>
+        <span id="pager-count"></span>
+        <button id="pager-next">›</button>`;
+      const header = document.getElementById("panel-header");
+      header.insertBefore(pager, header.querySelector(".panel-title")); // ← changed
+      pager.querySelector('#pager-prev').addEventListener('click', () => pagePanel(-1));
+      pager.querySelector('#pager-next').addEventListener('click', () => pagePanel(1));
+    }
+    pager.querySelector('#pager-count').textContent = `${panelIndex + 1} / ${panelStack.length}`;
+}
+  function pagePanel(delta) {
+    panelIndex = (panelIndex + delta + panelStack.length) % panelStack.length;
+    openPanel(panelStack[panelIndex], panelStack);
+  }
+
 
   function closePanel() {
     activeStationId = null;
