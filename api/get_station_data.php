@@ -119,4 +119,5 @@ echo json_encode([
     'cache_age_seconds'   => $cache_age,
     'rainfall_24h_mm'     => $rainfall_24h,    // null if no precip sensor
     'site_info'           => $site_info,        // null if not set in config
+    'ports'               => $station_cfg['ports'] ?? [],
 ], JSON_UNESCAPED_UNICODE);

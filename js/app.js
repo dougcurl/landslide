@@ -961,7 +961,7 @@ function renderAtIndex(idx) {
       rows += infoRow('Elevation',       si.elevation_m != null ? si.elevation_m + ' m' : '—');
       rows += infoRow('Slope',           si.slope_deg  != null ? si.slope_deg + '°' : '—');
       rows += infoRow('Landslide Susceptibility<br>(via Susceptibility Map)',  si.susceptibility || '—');
-      rows += infoRow('Sensor Depths',   si.sensor_depths  || '—');
+      rows += infoRow('Sensor Depths',   buildDepthChips(data.ports));
       rows += infoRow('Installed',       si.date_installed || '—');
       rows += infoRow('Collaborator',    si.collaborator   || '—');    
     }
@@ -994,6 +994,46 @@ function renderAtIndex(idx) {
     return `<tr><td>${label}</td><td>${value}</td></tr>`;
   }
   
+  function buildDepthChips(ports) {
+    if (!ports || !ports.length) return '—';
+
+    const depthTypeLabel = { soil_moisture: 'VWC', matric_potential: 'Matric', soil_temp: 'Temp' };
+    const groupNames = ['Upper', 'Deeper']; // extend if a station ever has >2 depth zones
+
+    // Dedupe by depth+type, then sort shallow → deep
+    const seen  = new Set();
+    const clean = [];
+    ports.forEach(p => {
+      if (!p.depth_cm) return;
+      const key = p.depth_cm + p.type;
+      if (seen.has(key)) return;
+      seen.add(key);
+      clean.push(p);
+    });
+    clean.sort((a, b) => a.depth_cm - b.depth_cm);
+
+    // Chunk into pairs — one physical depth = one VWC sensor + one matric sensor
+    const groups = [];
+    for (let i = 0; i < clean.length; i += 2) {
+      groups.push(clean.slice(i, i + 2));
+    }
+
+    let html = '<div class="depth-groups">';
+    groups.forEach((group, i) => {
+      const label = groupNames[i] || `Depth ${i + 1}`;
+      html += `<div class="depth-group">
+        <div class="depth-group-label">${label}</div>
+        <div class="depth-chips">`;
+      group.forEach(p => {
+        const typeLbl = depthTypeLabel[p.type] || (p.type.charAt(0).toUpperCase() + p.type.slice(1));
+        html += `<span class="depth-chip">${escHtml(String(p.depth_cm))} cm — ${typeLbl}</span>`;
+      });
+      html += `</div></div>`;
+    });
+    html += '</div>';
+    return html;
+  }
+
   function susceptibilityBadge(val) {
     if (!val) return '<span class="susc-badge susc-unknown">—</span>';
     const v = val.trim().toLowerCase();
@@ -1239,7 +1279,7 @@ function renderAtIndex(idx) {
             type: "time",
             time: { unit: "day", displayFormats: { day: "MMM d" } },
             grid:  { color: "rgba(120,180,140,0.07)" },
-            ticks: { color: "#b8d4c0", font: { family: "DM Mono", size: 11 }, maxRotation: 0 }
+            ticks: { color: "#b8d4c0", font: { family: "DM Mono", size: 11 }, autoSkip: true, maxTicksLimit: 5, maxRotation: 0 }
           },
           y: {
             grid:  { color: "rgba(120,180,140,0.07)" },
