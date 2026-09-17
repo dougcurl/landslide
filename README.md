@@ -28,7 +28,7 @@ Built by the Kentucky Geological Survey (KGS), University of Kentucky, in suppor
 | `api/get_station_data.php` | Panel endpoint — returns 14-day history for one station |
 | `api/get_stations_geojson.php` | Station metadata as GeoJSON (for ArcGIS Online / hosted layers) |
 | `api/download_station.php` | Streams a 14-day per-station data download (CSV or JSON) |
-| `api/setup_helper.php` | One-time setup utility — fetches sensor configs from serial numbers |
+| `api/setup_helper.example.php` | Reference one-time setup utility — copy to `setup_helper.php`, generate a `STATIONS` array from serial numbers, then delete |
 | `css/style.css` | Styles |
 | `css/splash.css` | Splash / about-panel styles |
 | `js/app.js` | ArcGIS map, markers, NEXRAD radar, detail panel, Chart.js charts |
@@ -68,15 +68,18 @@ mkdir cache
 Make sure the IIS app pool account has write access to it. (`CACHE_DIR` in `config.php` points here; the default is `<app root>/cache/`.)
 
 ### 5. Run the setup helper
-Browse to:
+The repo ships a reference helper as `api/setup_helper.example.php`. Copy it into place and set a private key:
+```
+copy api\setup_helper.example.php api\setup_helper.php
+```
+Edit the `SETUP_KEY` constant near the top of your new `setup_helper.php`, then browse to:
 ```
 /api/setup_helper.php?key=YOUR_SETUP_KEY
 ```
-Set `YOUR_SETUP_KEY` to the key value defined in `setup_helper.php`.
 
-Enter your device serial numbers (one per line) in the **Enter Serial Numbers** tab. Find serial numbers in `app.zentracloud.io → Devices`. Format: `z6-XXXXX`.
+Enter your device serial numbers, one per line. Find them in `app.zentracloud.io → Devices`. Format: `z6-XXXXX`.
 
-The helper will call the v5 API for each device, detect sensor ports and measurement types, and generate a ready-to-paste `STATIONS` array for `config.php`.
+The helper samples recent data for each device, detects its sensor ports and measurement types, and generates a ready-to-paste `STATIONS` array for `config.php`.
 
 **After pasting the generated array into `config.php`**, fill in the following for each station and port — the v5 API does not provide this information:
 - `'region'` — descriptive region label, e.g. `'Eastern KY'`
@@ -84,7 +87,7 @@ The helper will call the v5 API for each device, detect sensor ports and measure
 - `'label'` — human-readable depth label, e.g. `'10 cm'`
 - `'vwc_max'` — optional field-saturated VWC per port, used for relative saturation
 
-**Delete `setup_helper.php` when done** — it is a one-time tool.
+**Delete `setup_helper.php` when done** — it is a one-time tool. (Keep `setup_helper.example.php` in the repo; delete only the working copy from the server.)
 
 ### 6. Run an initial cache population
 With stations configured, run the cache refresh once manually before setting up the scheduler. This takes several minutes due to v5 rate limits (~62 seconds between stations after the first 5):
