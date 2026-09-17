@@ -238,7 +238,7 @@ Either way, please credit the Kentucky Geological Survey. See [`LICENSE`](LICENS
 
 Please cite the Kentucky Geological Survey in any use, publication, or derivative that relies on this software or the data it presents:
 
-> Kentucky Geological Survey, University of Kentucky, 2026, Slope Hydrologic Monitoring Network [software and data]: https://github.com/kgs/slope-monitoring;.
+> Kentucky Geological Survey, University of Kentucky, 2026, Slope Hydrologic Monitoring Network [software and data]: https://github.com/kgsDev/slope-monitoring;.
 
 (Adjust the year and URL as needed once the repository is published.)
 
