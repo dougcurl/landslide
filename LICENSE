@@ -1,0 +1,17 @@
+Slope Hydrologic Monitoring Network
+Copyright (c) 2026 Kentucky Geological Survey, University of Kentucky
+
+This repository is dual-licensed.
+
+  SOURCE CODE is licensed under the MIT License. See LICENSE-MIT.
+  This covers the application source: the PHP, JavaScript, CSS, and HTML
+  files in this repository.
+
+  DATA AND DOCUMENTATION are licensed under the Creative Commons
+  Attribution 4.0 International License (CC BY 4.0). See LICENSE-CC-BY-4.0.
+  This covers the monitoring data and station metadata served or exported
+  by the application, the documentation (including the README), and any
+  figures or images.
+
+In all cases, please credit the Kentucky Geological Survey. A suggested
+citation appears in LICENSE-CC-BY-4.0 and in the README.

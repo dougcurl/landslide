@@ -227,7 +227,20 @@ Data is **provisional** and updated approximately every 45 minutes. It is provid
 
 ## License
 
-_Add your chosen license here (e.g. MIT) and include a `LICENSE` file._
+This repository is dual-licensed:
+
+- **Source code** (the PHP, JavaScript, CSS, and HTML files) is licensed under the [MIT License](LICENSE-MIT).
+- **Data and documentation** — the monitoring data and station metadata served or exported by the application, this README and other docs, and any figures — are licensed under the [Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
+
+Either way, please credit the Kentucky Geological Survey. See [`LICENSE`](LICENSE) for the summary, and [`LICENSE-MIT`](LICENSE-MIT) / [`LICENSE-CC-BY-4.0`](LICENSE-CC-BY-4.0) for full terms.
+
+### How to cite
+
+Please cite the Kentucky Geological Survey in any use, publication, or derivative that relies on this software or the data it presents:
+
+> Kentucky Geological Survey, University of Kentucky, 2026, Slope Hydrologic Monitoring Network [software and data]: https://github.com/kgs/slope-monitoring;.
+
+(Adjust the year and URL as needed once the repository is published.)
 
 ## Acknowledgements
 
