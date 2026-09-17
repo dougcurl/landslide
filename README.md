@@ -1,6 +1,8 @@
-# KGS Slope Hydrologic Monitoring Network
+# Slope Hydrologic Monitoring Network
 
-Interactive web map displaying real-time soil moisture data from 24 Zentra Cloud 2.0 monitoring stations across Kentucky. Click any station marker to view 14-day sensor history, multi-depth charts, and live NEXRAD radar overlay.
+Interactive web map displaying real-time soil moisture data from 24 Zentra Cloud 2.0 monitoring stations across Eastern Kentucky. Click any station marker to view 14-day sensor history, multi-depth charts, and a live NEXRAD radar overlay.
+
+Built by the Kentucky Geological Survey (KGS), University of Kentucky, in support of the CLIMBS project.
 
 ## Stack
 
@@ -8,7 +10,7 @@ Interactive web map displaying real-time soil moisture data from 24 Zentra Cloud
 - **Backend**: PHP 8.x on IIS (Windows Server)
 - **Data source**: Zentra Cloud 2.0 API v5 (`api.zentracloud.io`)
 - **Caching**: PHP flat-file JSON in `cache/` subfolder
-- **Deployment path**: `\\[server-name-and-directory]\slope-monitoring\`
+- **Sensors**: METER TEROS 12 / 21 / 32 and ATMOS 41
 
 ---
 
@@ -17,15 +19,20 @@ Interactive web map displaying real-time soil moisture data from 24 Zentra Cloud
 | File | Purpose |
 |------|---------|
 | `index.php` | Main map page (HTML shell + ArcGIS init) |
-| `config.php` | API token, station registry, cache settings |
+| `config.php` | API token, station registry, cache settings — **not committed** (see `config.example.php`) |
+| `config.example.php` | Template for `config.php`; copy and fill in |
+| `stations.php` | Stand-alone station information directory (reads config, no cache) |
 | `api/zentra_v5.php` | Shared v5 API helper — HTTP, parsing, sensor type detection |
 | `api/refresh_cache.php` | Fetches Zentra data, writes per-station + summary JSON cache |
 | `api/get_stations.php` | Map endpoint — returns all stations with latest moisture |
 | `api/get_station_data.php` | Panel endpoint — returns 14-day history for one station |
+| `api/get_stations_geojson.php` | Station metadata as GeoJSON (for ArcGIS Online / hosted layers) |
+| `api/download_station.php` | Streams a 14-day per-station data download (CSV or JSON) |
 | `api/setup_helper.php` | One-time setup utility — fetches sensor configs from serial numbers |
 | `css/style.css` | Styles |
+| `css/splash.css` | Splash / about-panel styles |
 | `js/app.js` | ArcGIS map, markers, NEXRAD radar, detail panel, Chart.js charts |
-| `web.config` | IIS configuration (PHP handler, MIME types, cache folder blocked) |
+| `web.config` | IIS configuration (PHP handler, MIME types, cache folder blocked) — **not committed** |
 | `refresh_cache.bat` | Windows Task Scheduler batch script |
 
 ---
@@ -33,10 +40,7 @@ Interactive web map displaying real-time soil moisture data from 24 Zentra Cloud
 ## Setup
 
 ### 1. Deploy files
-Copy everything to:
-```
-\\[server-name-and-directory]\slope-monitoring\
-```
+Copy everything to your web application root (a UNC share or local path served by IIS).
 
 ### 2. Get your API token
 - Log in to **app.zentracloud.io**
@@ -46,24 +50,29 @@ Copy everything to:
 
 > **Note:** v5 tokens are separate from v4 tokens. They live at `app.zentracloud.io`, not `zentracloud.com`.
 
-### 3. Configure `config.php`
-Open `config.php` and paste your token:
+### 3. Create `config.php`
+Copy the template and open it:
+```
+copy config.example.php config.php
+```
+Paste your token:
 ```php
 define('ZENTRA_API_TOKEN', 'your-token-here');
 ```
-This is the **only** file that needs the token. Do not put it anywhere else.
+This is the **only** file that needs the token. Do not put it anywhere else. `config.php` is listed in `.gitignore` and must never be committed.
 
 ### 4. Create the cache folder
 ```
-mkdir \\[server-name-and-directory]\slope-monitoring\cache
+mkdir cache
 ```
-Make sure the the IIS app pool account has write access to this share.
+Make sure the IIS app pool account has write access to it. (`CACHE_DIR` in `config.php` points here; the default is `<app root>/cache/`.)
 
 ### 5. Run the setup helper
 Browse to:
 ```
-/api/setup_helper.php?key=kgs-setup-2024
+/api/setup_helper.php?key=YOUR_SETUP_KEY
 ```
+Set `YOUR_SETUP_KEY` to the key value defined in `setup_helper.php`.
 
 Enter your device serial numbers (one per line) in the **Enter Serial Numbers** tab. Find serial numbers in `app.zentracloud.io → Devices`. Format: `z6-XXXXX`.
 
@@ -73,19 +82,39 @@ The helper will call the v5 API for each device, detect sensor ports and measure
 - `'region'` — descriptive region label, e.g. `'Eastern KY'`
 - `'depth_cm'` — sensor installation depth in cm (from your field records)
 - `'label'` — human-readable depth label, e.g. `'10 cm'`
+- `'vwc_max'` — optional field-saturated VWC per port, used for relative saturation
 
 **Delete `setup_helper.php` when done** — it is a one-time tool.
 
 ### 6. Run an initial cache population
 With stations configured, run the cache refresh once manually before setting up the scheduler. This takes several minutes due to v5 rate limits (~62 seconds between stations after the first 5):
 ```
-C:\php\php.exe \\[server-name-and-directory]\slope-monitoring\api\refresh_cache.php
+C:\php\php.exe <app-root>\api\refresh_cache.php
 ```
 
 ### 7. Set up Task Scheduler
 Schedule `refresh_cache.bat` to run every 15 minutes. See the comments inside that file for full Task Scheduler setup instructions.
 
-> **Important:** The task must run as a **domain account** with access to `\\kgsgarnet\webshare\`. Running as `SYSTEM` or `Local Service` will fail — those accounts cannot reach network shares.
+> **Important:** If the app root is a network share, the task must run as a **domain account** with write access to that share. Running as `SYSTEM` or `Local Service` will fail — those accounts cannot reach network shares.
+
+### 8. (Optional) Analytics
+`index.php` includes a Google Analytics tag with the KGS measurement IDs. If you fork this, replace or remove those IDs.
+
+---
+
+## Configuration reference
+
+Constants defined in `config.php` (see `config.example.php` for the full annotated template):
+
+| Constant | Purpose |
+|----------|---------|
+| `ZENTRA_API_TOKEN` | v5 API token (secret) |
+| `ZENTRA_API_BASE` | v5 base URL, trailing slash required |
+| `HISTORY_DAYS` | Days of history fetched/cached per station |
+| `SITE_NAME`, `SITE_ORG` | Header and `<title>` branding |
+| `CACHE_DIR` | Flat-file cache directory, trailing slash required |
+| `CACHE_TTL_SUMMARY` | Seconds to serve cached summary before a background refresh |
+| `STATIONS` | Station + port registry (see template for field docs) |
 
 ---
 
@@ -145,7 +174,16 @@ Schedule `refresh_cache.bat` to run every 15 minutes. See the comments inside th
 
 **Pagination**: Calendar-month windows aligned to UTC. 14 days of data spans at most 2 pages. When `pagination.next_token` is non-null, pass it as the sole query parameter on the next request — it supersedes all other parameters.
 
-**Rate limiting**: GCRA algorithm — burst of 5 requests, then 1 request per minute steady-state. With 25 stations, a full refresh takes approximately 25–30 minutes. The refresh script sorts stations by staleness (oldest cache first) so every 15-minute scheduler run makes useful progress even if it can't complete a full cycle.
+**Rate limiting**: GCRA algorithm — burst of 5 requests, then 1 request per minute steady-state. With 24 stations, a full refresh takes approximately 25–30 minutes. The refresh script sorts stations by staleness (oldest cache first) so every 15-minute scheduler run makes useful progress even if it can't complete a full cycle.
+
+---
+
+## Data endpoints
+
+Besides the app's own map/panel endpoints, two endpoints are useful for external consumers:
+
+- `api/get_stations_geojson.php` — station metadata (location + `site_info`) as GeoJSON, suitable for publishing as a hosted feature layer in ArcGIS Online. Static config data only; no live values, no cache dependency.
+- `api/download_station.php?id=z6-XXXXX&format=csv` — a 14-day per-station export from the cache. `format=csv` (default) or `format=json`.
 
 ---
 
@@ -170,4 +208,24 @@ The token in `config.php` is wrong or expired. Get your v5 token from `app.zentr
 The name and coordinates come from the Zentra API (`metadata.device_name` and `metadata.coordinates`). If they're wrong in Zentra, override them directly in the `STATIONS` array in `config.php` — the config values take precedence when the API returns zeros.
 
 **Setup helper shows no ports for a station**
-The helper samples the last 2 hours of data. If the station hasn't reported recently there will be no readings to inspect. Add the port config manually in `config.php` using the sensor model and depth from your field records. Use `detect_sensor_type_v5()` in `zentra_v5.php` as a reference for which `type` value to use.
+The helper samples recent data. If the station hasn't reported recently there will be no readings to inspect. Add the port config manually in `config.php` using the sensor model and depth from your field records. Use `detect_sensor_type_v5()` in `zentra_v5.php` as a reference for which `type` value to use.
+
+---
+
+## Relative soil saturation
+
+The dashboard's core scientific contribution is **relative soil saturation** normalization: each port's volumetric water content is divided by a field-saturated maximum (`vwc_max`, keyed by station and port in `config.php`) so that stations with different soils can be compared on a common 0–1 scale. Saturation is what the map and panels foreground; raw VWC is available in the charts and downloads.
+
+---
+
+## Data & disclaimer
+
+Data is **provisional** and updated approximately every 45 minutes. It is provided for situational awareness and research and should not be the sole basis for any safety-critical decision.
+
+## License
+
+_Add your chosen license here (e.g. MIT) and include a `LICENSE` file._
+
+## Acknowledgements
+
+Kentucky Geological Survey, University of Kentucky. Landslide susceptibility layer derived from lidar-based machine-learning classification across Eastern Kentucky counties. NEXRAD radar tiles courtesy of the Iowa Environmental Mesonet (Iowa State University). Kentucky APED imagery via kyraster.ky.gov.
