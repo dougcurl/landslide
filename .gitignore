@@ -13,6 +13,13 @@ cache/
 *.tar.gz
 *.zip
 
+#archive files
+**/kgs-landslide-data/
+/kgs-landslide-data/*
+**/kgs-landslide-data/*
+
+archive_and_commit.bat
+
 # OS files
 web.config
 config.php
